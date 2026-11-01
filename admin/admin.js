@@ -62,9 +62,27 @@
 
   // Navigation Tabs
   const tabBtnProducts = document.getElementById('tabBtnProducts');
+  const tabBtnReviews = document.getElementById('tabBtnReviews');
   const tabBtnSettings = document.getElementById('tabBtnSettings');
   const tabPanelProducts = document.getElementById('tabPanelProducts');
+  const tabPanelReviews = document.getElementById('tabPanelReviews');
   const tabPanelSettings = document.getElementById('tabPanelSettings');
+  const adminPendingReviewsBadge = document.getElementById('adminPendingReviewsBadge');
+
+  // Reviews Tab Elements
+  const statReviewsPending = document.getElementById('statReviewsPending');
+  const statReviewsApproved = document.getElementById('statReviewsApproved');
+  const statReviewsRejected = document.getElementById('statReviewsRejected');
+  const statReviewsHomepage = document.getElementById('statReviewsHomepage');
+  const refreshReviewsBtn = document.getElementById('refreshReviewsBtn');
+  const reviewsDbNoticeBanner = document.getElementById('reviewsDbNoticeBanner');
+  const adminReviewStatusFilters = document.getElementById('adminReviewStatusFilters');
+  const adminReviewsSearchInput = document.getElementById('adminReviewsSearchInput');
+  const adminReviewsTableBody = document.getElementById('adminReviewsTableBody');
+  const filterCountPending = document.getElementById('filterCountPending');
+  const filterCountApproved = document.getElementById('filterCountApproved');
+  const filterCountRejected = document.getElementById('filterCountRejected');
+  const filterCountAll = document.getElementById('filterCountAll');
 
   // Stats
   const statTotalProducts = document.getElementById('statTotalProducts');
@@ -134,11 +152,15 @@
      ------------------------------------------------------------------------ */
   let currentSession = null;
   let adminProducts = [];
+  let adminReviews = [];
+  let adminReviewsSchemaReady = false;
+  let activeReviewStatusFilter = 'pending';
   let slugManuallyEdited = false;
   let editorColors = [];
   let editorImages = [];
   let dragSourceIndex = null;
   let pendingDeleteProduct = null;
+  let pendingDeleteReview = null;
 
   /* ------------------------------------------------------------------------
      Helpers: Toast, Slugify & Preview Image Path Resolution
@@ -304,19 +326,30 @@
   }
 
   /* ------------------------------------------------------------------------
-     2. Tab Switching (Products vs Settings)
+     2. Tab Switching (Products vs Reviews vs Settings)
      ------------------------------------------------------------------------ */
   function switchAdminTab(tabKey) {
     const isProducts = tabKey === 'products';
-    tabBtnProducts.classList.toggle('is-active', isProducts);
-    tabBtnSettings.classList.toggle('is-active', !isProducts);
-    tabPanelProducts.hidden = !isProducts;
-    tabPanelSettings.hidden = isProducts;
+    const isReviews = tabKey === 'reviews';
+    const isSettings = tabKey === 'settings';
+
+    if (tabBtnProducts) tabBtnProducts.classList.toggle('is-active', isProducts);
+    if (tabBtnReviews) tabBtnReviews.classList.toggle('is-active', isReviews);
+    if (tabBtnSettings) tabBtnSettings.classList.toggle('is-active', isSettings);
+
+    if (tabPanelProducts) tabPanelProducts.hidden = !isProducts;
+    if (tabPanelReviews) tabPanelReviews.hidden = !isReviews;
+    if (tabPanelSettings) tabPanelSettings.hidden = !isSettings;
   }
 
   if (tabBtnProducts) {
     tabBtnProducts.addEventListener('click', function () {
       switchAdminTab('products');
+    });
+  }
+  if (tabBtnReviews) {
+    tabBtnReviews.addEventListener('click', function () {
+      switchAdminTab('reviews');
     });
   }
   if (tabBtnSettings) {
@@ -326,11 +359,12 @@
   }
 
   /* ------------------------------------------------------------------------
-     3. Load Products & Settings from Supabase
+     3. Load Products, Reviews & Settings from Supabase
      ------------------------------------------------------------------------ */
   async function loadAdminData() {
     if (!currentSession) return;
     await Promise.all([fetchAdminProducts(), fetchAdminSettings()]);
+    await fetchAdminReviews();
   }
 
   async function fetchAdminProducts() {
@@ -375,6 +409,7 @@
         .maybeSingle();
 
       if (!error && data) {
+        adminReviewsSchemaReady = data.reviews_enabled === true;
         settingWhatsapp.value = String(data.whatsapp_number || '923469377256').replace(
           /\D/g,
           ''
@@ -1160,10 +1195,14 @@
   }
 
   /* ------------------------------------------------------------------------
-     7. Delete Confirmation Modal
+     7. Delete Confirmation Modal (Products & Reviews)
      ------------------------------------------------------------------------ */
+  const deleteModalTitleEl = document.getElementById('deleteModalTitle');
+
   function openDeleteModal(product) {
     pendingDeleteProduct = product;
+    pendingDeleteReview = null;
+    if (deleteModalTitleEl) deleteModalTitleEl.textContent = 'Delete Piece?';
     if (deleteModalMessage) {
       deleteModalMessage.innerHTML =
         'Are you sure you want to permanently delete <strong>' +
@@ -1176,8 +1215,25 @@
     deleteModalBackdrop.setAttribute('aria-hidden', 'false');
   }
 
+  function openDeleteReviewModal(review, productName) {
+    pendingDeleteReview = review;
+    pendingDeleteProduct = null;
+    if (deleteModalTitleEl) deleteModalTitleEl.textContent = 'Delete Review?';
+    if (deleteModalMessage) {
+      deleteModalMessage.innerHTML =
+        'Are you sure you want to permanently delete the review by <strong>' +
+        escapeHTML(review.reviewer_name) +
+        '</strong> for <strong>' +
+        escapeHTML(productName || 'this piece') +
+        '</strong>? This action cannot be undone.';
+    }
+    deleteModalBackdrop.hidden = false;
+    deleteModalBackdrop.setAttribute('aria-hidden', 'false');
+  }
+
   function closeDeleteModal() {
     pendingDeleteProduct = null;
+    pendingDeleteReview = null;
     deleteModalBackdrop.hidden = true;
     deleteModalBackdrop.setAttribute('aria-hidden', 'true');
   }
@@ -1187,7 +1243,32 @@
 
   if (confirmDeleteBtn) {
     confirmDeleteBtn.addEventListener('click', async function () {
-      if (!pendingDeleteProduct || !supabase) return;
+      if (!supabase) return;
+
+      if (pendingDeleteReview) {
+        const targetRev = pendingDeleteReview;
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.textContent = 'Deleting...';
+        try {
+          const { error } = await supabase.from('reviews').delete().eq('id', targetRev.id);
+          if (error) {
+            showToast('Delete failed: ' + error.message, true);
+          } else {
+            invalidatePublicCache();
+            closeDeleteModal();
+            await fetchAdminReviews();
+            showToast('Deleted review by "' + targetRev.reviewer_name + '".');
+          }
+        } catch (err) {
+          showToast('Network error deleting review.', true);
+        } finally {
+          confirmDeleteBtn.disabled = false;
+          confirmDeleteBtn.textContent = 'Delete Permanently';
+        }
+        return;
+      }
+
+      if (!pendingDeleteProduct) return;
       const target = pendingDeleteProduct;
       confirmDeleteBtn.disabled = true;
       confirmDeleteBtn.textContent = 'Deleting...';
@@ -1207,6 +1288,378 @@
       } finally {
         confirmDeleteBtn.disabled = false;
         confirmDeleteBtn.textContent = 'Delete Permanently';
+      }
+    });
+  }
+
+  /* ------------------------------------------------------------------------
+     7B. Customer Reviews Moderation Controller
+     ------------------------------------------------------------------------ */
+  function resolveProductNameForReview(productId) {
+    if (!productId) return 'Unknown Piece';
+    const match = adminProducts.find(function (p) {
+      return p.id === productId || p.slug === productId;
+    });
+    if (match && match.name) return match.name;
+
+    if (window.HandleHueData && typeof window.HandleHueData.findProduct === 'function') {
+      const fallbackProd = window.HandleHueData.findProduct(productId);
+      if (fallbackProd && fallbackProd.name) return fallbackProd.name;
+    }
+    return 'Atelier Piece';
+  }
+
+  function renderAdminStars(ratingValue) {
+    const rounded = Math.max(1, Math.min(5, Math.round(Number(ratingValue) || 5)));
+    let out = '';
+    for (let i = 1; i <= 5; i++) {
+      out += i <= rounded ? '&#9733;' : '&#9734;';
+    }
+    return out;
+  }
+
+  function formatAdminReviewDate(isoDate) {
+    if (!isoDate) return '';
+    try {
+      const d = new Date(isoDate);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-PK', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return '';
+    }
+  }
+
+  async function fetchAdminReviews() {
+    if (!supabase || !currentSession) return;
+
+    if (!adminReviewsSchemaReady) {
+      if (reviewsDbNoticeBanner) {
+        reviewsDbNoticeBanner.hidden = false;
+        reviewsDbNoticeBanner.innerHTML =
+          '<strong>Reviews table not initialized yet:</strong> Run <code>supabase/reviews.sql</code> in your Supabase SQL Editor to enable customer reviews moderation.';
+      }
+      adminReviews = [];
+      updateReviewsStatsAndBadge();
+      renderReviewsTable();
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (reviewsDbNoticeBanner) {
+          reviewsDbNoticeBanner.hidden = false;
+          reviewsDbNoticeBanner.innerHTML =
+            '<strong>Reviews table not initialized yet:</strong> Run <code>supabase/reviews.sql</code> in your Supabase SQL Editor to enable customer reviews moderation.';
+        }
+        adminReviews = [];
+      } else {
+        if (reviewsDbNoticeBanner) reviewsDbNoticeBanner.hidden = true;
+        adminReviews = Array.isArray(data) ? data : [];
+      }
+    } catch (err) {
+      adminReviews = [];
+    }
+
+    updateReviewsStatsAndBadge();
+    renderReviewsTable();
+  }
+
+  function updateReviewsStatsAndBadge() {
+    const pendingCount = adminReviews.filter(function (r) {
+      return r.status === 'pending';
+    }).length;
+    const approvedCount = adminReviews.filter(function (r) {
+      return r.status === 'approved';
+    }).length;
+    const rejectedCount = adminReviews.filter(function (r) {
+      return r.status === 'rejected';
+    }).length;
+    const homepageCount = adminReviews.filter(function (r) {
+      return r.status === 'approved' && Boolean(r.show_on_homepage);
+    }).length;
+
+    if (statReviewsPending) statReviewsPending.textContent = String(pendingCount);
+    if (statReviewsApproved) statReviewsApproved.textContent = String(approvedCount);
+    if (statReviewsRejected) statReviewsRejected.textContent = String(rejectedCount);
+    if (statReviewsHomepage) statReviewsHomepage.textContent = String(homepageCount);
+
+    if (filterCountPending) filterCountPending.textContent = '(' + pendingCount + ')';
+    if (filterCountApproved) filterCountApproved.textContent = '(' + approvedCount + ')';
+    if (filterCountRejected) filterCountRejected.textContent = '(' + rejectedCount + ')';
+    if (filterCountAll) filterCountAll.textContent = '(' + adminReviews.length + ')';
+
+    if (adminPendingReviewsBadge) {
+      if (pendingCount > 0) {
+        adminPendingReviewsBadge.hidden = false;
+        adminPendingReviewsBadge.textContent = String(pendingCount);
+      } else {
+        adminPendingReviewsBadge.hidden = true;
+        adminPendingReviewsBadge.textContent = '0';
+      }
+    }
+  }
+
+  function renderReviewsTable() {
+    if (!adminReviewsTableBody) return;
+
+    const query = (adminReviewsSearchInput ? adminReviewsSearchInput.value : '')
+      .trim()
+      .toLowerCase();
+
+    const filtered = adminReviews.filter(function (r) {
+      if (activeReviewStatusFilter !== 'all' && r.status !== activeReviewStatusFilter) {
+        return false;
+      }
+      if (query) {
+        const prodName = resolveProductNameForReview(r.product_id).toLowerCase();
+        const match =
+          prodName.includes(query) ||
+          String(r.reviewer_name || '').toLowerCase().includes(query) ||
+          String(r.reviewer_city || '').toLowerCase().includes(query) ||
+          String(r.title || '').toLowerCase().includes(query) ||
+          String(r.comment || '').toLowerCase().includes(query);
+        if (!match) return false;
+      }
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      adminReviewsTableBody.innerHTML =
+        '<tr>' +
+        '<td colspan="6" style="text-align:center; padding:3rem 1rem; color:var(--color-charcoal-soft);">' +
+        'No ' +
+        (activeReviewStatusFilter === 'all' ? '' : escapeHTML(activeReviewStatusFilter) + ' ') +
+        'reviews match your current filter.' +
+        '</td>' +
+        '</tr>';
+      return;
+    }
+
+    adminReviewsTableBody.innerHTML = filtered
+      .map(function (r) {
+        const safeId = escapeHTML(r.id);
+        const prodName = resolveProductNameForReview(r.product_id);
+        const dateStr = formatAdminReviewDate(r.created_at);
+        const status = r.status || 'pending';
+        const statusClass =
+          status === 'approved'
+            ? 'admin-status-badge--approved'
+            : status === 'rejected'
+            ? 'admin-status-badge--rejected'
+            : 'admin-status-badge--pending';
+
+        const showHome = Boolean(r.show_on_homepage);
+
+        return (
+          '<tr data-review-row="' +
+          safeId +
+          '">' +
+          '<td>' +
+          '<div class="admin-prod-name">' +
+          escapeHTML(prodName) +
+          '</div>' +
+          '<div class="admin-prod-slug">' +
+          escapeHTML(dateStr) +
+          '</div>' +
+          '</td>' +
+          '<td>' +
+          '<div style="font-weight:500;">' +
+          escapeHTML(r.reviewer_name) +
+          '</div>' +
+          (r.reviewer_city
+            ? '<div class="admin-prod-slug">' + escapeHTML(r.reviewer_city) + '</div>'
+            : '<div class="admin-prod-slug">Pakistan</div>') +
+          '</td>' +
+          '<td>' +
+          '<div class="admin-review-stars" aria-label="Rated ' +
+          escapeHTML(r.rating || 5) +
+          ' out of 5 stars">' +
+          renderAdminStars(r.rating) +
+          '</div>' +
+          (r.title
+            ? '<div class="admin-review-title">' + escapeHTML(r.title) + '</div>'
+            : '') +
+          '<div class="admin-review-comment">' +
+          escapeHTML(r.comment) +
+          '</div>' +
+          '</td>' +
+          '<td>' +
+          '<span class="admin-status-badge ' +
+          statusClass +
+          '">' +
+          escapeHTML(status) +
+          '</span>' +
+          '</td>' +
+          '<td>' +
+          '<button type="button" class="admin-flag-toggle ' +
+          (showHome ? 'is-on' : '') +
+          '" data-review-toggle-homepage="' +
+          safeId +
+          '" aria-pressed="' +
+          showHome +
+          '">' +
+          (showHome ? 'On Homepage' : 'Show on Homepage') +
+          '</button>' +
+          '</td>' +
+          '<td>' +
+          '<div class="admin-row-actions">' +
+          '<button type="button" class="admin-btn admin-btn--outline admin-btn--sm" data-review-action="approve" data-review-id="' +
+          safeId +
+          '" ' +
+          (status === 'approved' ? 'disabled' : '') +
+          '>Approve</button>' +
+          '<button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" data-review-action="reject" data-review-id="' +
+          safeId +
+          '" ' +
+          (status === 'rejected' ? 'disabled' : '') +
+          '>Reject</button>' +
+          '<button type="button" class="admin-btn admin-btn--ghost admin-btn--sm" style="color:var(--color-danger);" data-review-action="delete" data-review-id="' +
+          safeId +
+          '">Delete</button>' +
+          '</div>' +
+          '</td>' +
+          '</tr>'
+        );
+      })
+      .join('');
+  }
+
+  if (refreshReviewsBtn) {
+    refreshReviewsBtn.addEventListener('click', async function () {
+      refreshReviewsBtn.disabled = true;
+      await fetchAdminReviews();
+      refreshReviewsBtn.disabled = false;
+      showToast('Reviews queue refreshed.');
+    });
+  }
+
+  if (adminReviewStatusFilters) {
+    adminReviewStatusFilters.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-review-status-filter]');
+      if (!btn) return;
+      activeReviewStatusFilter = btn.getAttribute('data-review-status-filter') || 'all';
+      adminReviewStatusFilters
+        .querySelectorAll('[data-review-status-filter]')
+        .forEach(function (b) {
+          b.classList.toggle(
+            'is-active',
+            b.getAttribute('data-review-status-filter') === activeReviewStatusFilter
+          );
+        });
+      renderReviewsTable();
+    });
+  }
+
+  if (adminReviewsSearchInput) {
+    adminReviewsSearchInput.addEventListener('input', renderReviewsTable);
+  }
+
+  if (adminReviewsTableBody) {
+    adminReviewsTableBody.addEventListener('click', async function (e) {
+      if (!supabase) return;
+
+      const homeToggleBtn = e.target.closest('[data-review-toggle-homepage]');
+      if (homeToggleBtn) {
+        const revId = homeToggleBtn.getAttribute('data-review-toggle-homepage');
+        const revObj = adminReviews.find(function (r) {
+          return String(r.id) === String(revId);
+        });
+        if (!revObj) return;
+
+        const nextShow = !revObj.show_on_homepage;
+        homeToggleBtn.disabled = true;
+        try {
+          const { error } = await supabase
+            .from('reviews')
+            .update({ show_on_homepage: nextShow })
+            .eq('id', revObj.id);
+
+          if (error) {
+            showToast('Could not update homepage flag: ' + error.message, true);
+          } else {
+            revObj.show_on_homepage = nextShow;
+            invalidatePublicCache();
+            updateReviewsStatsAndBadge();
+            renderReviewsTable();
+            showToast(
+              nextShow
+                ? 'Review enabled for homepage testimonials.'
+                : 'Review removed from homepage testimonials.'
+            );
+          }
+        } catch (err) {
+          showToast('Network error updating review.', true);
+        } finally {
+          homeToggleBtn.disabled = false;
+        }
+        return;
+      }
+
+      const actionBtn = e.target.closest('[data-review-action]');
+      if (!actionBtn) return;
+
+      const action = actionBtn.getAttribute('data-review-action');
+      const revId = actionBtn.getAttribute('data-review-id');
+      const revObj = adminReviews.find(function (r) {
+        return String(r.id) === String(revId);
+      });
+      if (!revObj) return;
+
+      if (action === 'delete') {
+        openDeleteReviewModal(revObj, resolveProductNameForReview(revObj.product_id));
+        return;
+      }
+
+      if (action === 'approve' || action === 'reject') {
+        const nextStatus = action === 'approve' ? 'approved' : 'rejected';
+        const row = actionBtn.closest('tr');
+        const rowBtns = row ? row.querySelectorAll('button') : [actionBtn];
+        rowBtns.forEach(function (b) {
+          b.disabled = true;
+        });
+
+        try {
+          const updatePayload = { status: nextStatus };
+          if (nextStatus === 'rejected') {
+            updatePayload.show_on_homepage = false;
+          }
+          const { error } = await supabase
+            .from('reviews')
+            .update(updatePayload)
+            .eq('id', revObj.id);
+
+          if (error) {
+            showToast('Could not update review status: ' + error.message, true);
+            rowBtns.forEach(function (b) {
+              b.disabled = false;
+            });
+          } else {
+            revObj.status = nextStatus;
+            if (nextStatus === 'rejected') revObj.show_on_homepage = false;
+            invalidatePublicCache();
+            updateReviewsStatsAndBadge();
+            renderReviewsTable();
+            showToast(
+              nextStatus === 'approved'
+                ? 'Approved review by "' + revObj.reviewer_name + '".'
+                : 'Rejected review by "' + revObj.reviewer_name + '".'
+            );
+          }
+        } catch (err) {
+          showToast('Network error updating review status.', true);
+          rowBtns.forEach(function (b) {
+            b.disabled = false;
+          });
+        }
       }
     });
   }

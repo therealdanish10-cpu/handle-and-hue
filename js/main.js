@@ -315,6 +315,30 @@
   /* ==========================================================================
      2. Reusable Product Card Renderer & Global Card Events
      ========================================================================== */
+  function renderStarString(ratingValue) {
+    const rounded = Math.max(0, Math.min(5, Math.round(Number(ratingValue) || 0)));
+    let stars = '';
+    for (let i = 1; i <= 5; i++) {
+      stars += i <= rounded ? '&#9733;' : '&#9734;';
+    }
+    return stars;
+  }
+
+  function formatReviewDate(isoDate) {
+    if (!isoDate) return '';
+    try {
+      const d = new Date(isoDate);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-PK', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return '';
+    }
+  }
+
   function renderProductCard(product, staggerIndex) {
     const idx = Number(staggerIndex) || 0;
     const wished = store.isInWishlist(product.id);
@@ -346,6 +370,27 @@
         formatPKR(product.compareAtPrice) +
         '</span>'
       : '';
+
+    const revCount = Number(product.reviewsCount) || 0;
+    const revAvg = Number(product.rating) || 0;
+    const cardRatingHtml =
+      revCount > 0 && revAvg > 0
+        ? '<div class="product-card__rating" aria-label="Rated ' +
+          escapeHTML(revAvg.toFixed(1)) +
+          ' out of 5 from ' +
+          escapeHTML(revCount) +
+          ' reviews">' +
+          '<span class="product-card__rating-stars" aria-hidden="true">' +
+          renderStarString(revAvg) +
+          '</span>' +
+          '<span>' +
+          escapeHTML(revAvg.toFixed(1)) +
+          '</span>' +
+          '<span class="product-card__rating-count">(' +
+          escapeHTML(revCount) +
+          ')</span>' +
+          '</div>'
+        : '';
 
     const swatchesHtml = (product.colors || [])
       .map(function (c, sIdx) {
@@ -440,6 +485,7 @@
       safeName +
       '</a>' +
       '</h3>' +
+      cardRatingHtml +
       '<div class="product-card__price-row">' +
       '<span class="product-card__price">' +
       formatPKR(product.price) +
@@ -674,6 +720,80 @@
       if (window.observeReveals) window.observeReveals();
     }
 
+    async function renderHomepageTestimonials() {
+      const testimonialsGrid = document.getElementById('homeTestimonialsGrid');
+      if (
+        !testimonialsGrid ||
+        !window.HandleHueData ||
+        typeof window.HandleHueData.getHomepageReviews !== 'function'
+      ) {
+        return;
+      }
+
+      try {
+        const homeReviews = await window.HandleHueData.getHomepageReviews();
+        if (!Array.isArray(homeReviews) || homeReviews.length === 0) {
+          // Keep the existing static testimonials as fallback
+          return;
+        }
+
+        testimonialsGrid.innerHTML = homeReviews
+          .slice(0, 6)
+          .map(function (r, idx) {
+            const stars = renderStarString(r.rating || 5);
+            const reviewerLabel = r.reviewer_city
+              ? escapeHTML(r.reviewer_name) + ' &mdash; ' + escapeHTML(r.reviewer_city)
+              : escapeHTML(r.reviewer_name);
+            const prodSlug = r.product_slug || r.product_id || '';
+            const prodName = r.product_name || 'Handle & Hue Piece';
+            const prodLinkHtml = prodSlug
+              ? '<a href="product.html?id=' +
+                encodeURIComponent(prodSlug) +
+                '" class="testimonial-product-link">' +
+                escapeHTML(prodName) +
+                '</a>'
+              : escapeHTML(prodName);
+
+            return (
+              '<article class="testimonial-card reveal ' +
+              (idx > 0 ? 'delay-' + ((idx % 3) + 1) : '') +
+              '">' +
+              '<div>' +
+              '<div class="testimonial-stars" aria-label="' +
+              escapeHTML(r.rating || 5) +
+              ' out of 5 stars">' +
+              stars +
+              '</div>' +
+              (r.title
+                ? '<h3 style="font-family:var(--font-heading); font-size:1.18rem; font-weight:600; margin-bottom:0.4rem; color:var(--color-charcoal);">' +
+                  escapeHTML(r.title) +
+                  '</h3>'
+                : '') +
+              '<p class="testimonial-quote">&ldquo;' +
+              escapeHTML(r.comment) +
+              '&rdquo;</p>' +
+              '</div>' +
+              '<div class="testimonial-author">' +
+              '<div>' +
+              '<strong>' +
+              reviewerLabel +
+              '</strong>' +
+              '<span>Verified Buyer &bull; ' +
+              prodLinkHtml +
+              '</span>' +
+              '</div>' +
+              '</div>' +
+              '</article>'
+            );
+          })
+          .join('');
+
+        if (window.observeReveals) window.observeReveals();
+      } catch (e) {
+        // Keep static testimonials on any error
+      }
+    }
+
     // Show skeletons briefly if products are empty, then render immediately
     if (getProducts().length === 0) {
       if (newArrivalsGrid) newArrivalsGrid.innerHTML = renderSkeletonGrid(4);
@@ -683,7 +803,12 @@
       renderHomeSections();
     }
 
-    window.addEventListener('handlehue:data-loaded', renderHomeSections);
+    renderHomepageTestimonials();
+
+    window.addEventListener('handlehue:data-loaded', function () {
+      renderHomeSections();
+      renderHomepageTestimonials();
+    });
 
     // Newsletter Form
     const newsletterForm = document.getElementById('newsletterForm');
@@ -1193,11 +1318,19 @@
         formatPKR(product.price) +
         compareHtml +
         '</span>' +
-        '<span class="pdp-info__rating">&#9733;&#9733;&#9733;&#9733;&#9733; ' +
-        escapeHTML(product.rating) +
-        ' (' +
-        escapeHTML(product.reviewsCount) +
-        ' Atelier Reviews)</span>' +
+        '<span id="pdpHeaderRatingSlot">' +
+        (Number(product.reviewsCount) > 0 && Number(product.rating) > 0
+          ? '<a href="#pdpReviewsSection" class="pdp-info__rating">' +
+            renderStarString(product.rating) +
+            ' ' +
+            escapeHTML(Number(product.rating).toFixed(1)) +
+            ' (' +
+            escapeHTML(product.reviewsCount) +
+            ' ' +
+            (Number(product.reviewsCount) === 1 ? 'Review' : 'Reviews') +
+            ')</a>'
+          : '') +
+        '</span>' +
         '</div>' +
         '<p class="pdp-info__desc">' +
         escapeHTML(product.description) +
@@ -1442,7 +1575,544 @@
           .join('');
       }
 
+      initProductReviewsSection(product);
+
       if (window.observeReveals) window.observeReveals();
+    }
+
+    function updateProductJsonLd(product, avgRating, reviewCount) {
+      const existingScript = document.getElementById('pdpProductJsonLd');
+      const count = Number(reviewCount) || 0;
+      const avg = Number(avgRating) || 0;
+
+      // Inject Product with aggregateRating ONLY when approved reviews exist
+      if (count <= 0 || avg <= 0) {
+        if (existingScript && existingScript.parentNode) {
+          existingScript.parentNode.removeChild(existingScript);
+        }
+        return;
+      }
+
+      const isSoldOut = product.inStock === false || product.in_stock === false;
+      const schemaObj = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.name,
+        description: product.description,
+        sku: product.sku || product.id,
+        image: [product.images && product.images.primary ? product.images.primary : ''],
+        brand: {
+          '@type': 'Brand',
+          name: 'Handle & Hue'
+        },
+        offers: {
+          '@type': 'Offer',
+          priceCurrency: 'PKR',
+          price: String(product.price || 0),
+          availability: isSoldOut
+            ? 'https://schema.org/OutOfStock'
+            : 'https://schema.org/InStock',
+          url: window.location.href
+        },
+        aggregateRating: {
+          '@type': 'AggregateRating',
+          ratingValue: avg.toFixed(1),
+          reviewCount: String(count),
+          bestRating: '5',
+          worstRating: '1'
+        }
+      };
+
+      let scriptEl = existingScript;
+      if (!scriptEl) {
+        scriptEl = document.createElement('script');
+        scriptEl.type = 'application/ld+json';
+        scriptEl.id = 'pdpProductJsonLd';
+        document.head.appendChild(scriptEl);
+      }
+      scriptEl.textContent = JSON.stringify(schemaObj);
+    }
+
+    let boundReviewsProductId = null;
+
+    function initProductReviewsSection(product) {
+      const reviewsContainer = document.getElementById('pdpReviewsContainer');
+      const reviewsSection = document.getElementById('pdpReviewsSection');
+      if (!reviewsContainer || !product) return;
+
+      const REVIEW_COOLDOWN_KEY = 'handle_hue_last_review_ts';
+      const VISIBLE_STEP = 5;
+      let approvedReviews = [];
+      let visibleCount = VISIBLE_STEP;
+
+      // Render shell once per product so typing in the form isn't interrupted
+      if (boundReviewsProductId !== product.id || !document.getElementById('pdpReviewForm')) {
+        boundReviewsProductId = product.id;
+
+        reviewsContainer.innerHTML =
+          '<div class="reviews-layout">' +
+          '<div class="reviews-left-col">' +
+          '<div class="reviews-summary-card" id="pdpReviewsSummaryBox">' +
+          '<!-- Populated by renderSummaryAndBreakdown -->' +
+          '</div>' +
+          '<div class="review-write-card">' +
+          '<h3 class="review-write-title">Write a Review</h3>' +
+          '<p class="review-write-subtitle">Share your experience with ' +
+          escapeHTML(product.name) +
+          '. No email or phone number required.</p>' +
+          '<div id="reviewFormFeedback" class="review-form-msg" role="alert" hidden></div>' +
+          '<form id="pdpReviewForm" novalidate>' +
+          '<div class="hp-trap" aria-hidden="true">' +
+          '<label for="reviewWebsiteTrap">Website</label>' +
+          '<input type="text" id="reviewWebsiteTrap" name="website" tabindex="-1" autocomplete="off">' +
+          '</div>' +
+          '<div class="form-field">' +
+          '<label id="starPickerLabel">Your Rating *</label>' +
+          '<div class="star-picker" id="reviewStarPicker" role="radiogroup" aria-labelledby="starPickerLabel">' +
+          '<button type="button" class="star-picker-btn" data-star-value="1" aria-label="1 out of 5 stars" aria-pressed="false">&#9733;</button>' +
+          '<button type="button" class="star-picker-btn" data-star-value="2" aria-label="2 out of 5 stars" aria-pressed="false">&#9733;</button>' +
+          '<button type="button" class="star-picker-btn" data-star-value="3" aria-label="3 out of 5 stars" aria-pressed="false">&#9733;</button>' +
+          '<button type="button" class="star-picker-btn" data-star-value="4" aria-label="4 out of 5 stars" aria-pressed="false">&#9733;</button>' +
+          '<button type="button" class="star-picker-btn" data-star-value="5" aria-label="5 out of 5 stars" aria-pressed="false">&#9733;</button>' +
+          '<span class="star-picker-caption" id="reviewStarCaption">Select stars</span>' +
+          '</div>' +
+          '<input type="hidden" id="reviewRatingValue" name="rating" value="0">' +
+          '</div>' +
+          '<div class="form-grid">' +
+          '<div class="form-field">' +
+          '<div class="field-label-row">' +
+          '<label for="reviewNameInput">Your Name *</label>' +
+          '<span class="char-counter" id="reviewNameCounter">0 / 60</span>' +
+          '</div>' +
+          '<input type="text" id="reviewNameInput" class="form-input" placeholder="e.g. Ayesha Khan" minlength="2" maxlength="60" required>' +
+          '</div>' +
+          '<div class="form-field">' +
+          '<div class="field-label-row">' +
+          '<label for="reviewCityInput">City (Optional)</label>' +
+          '<span class="char-counter" id="reviewCityCounter">0 / 60</span>' +
+          '</div>' +
+          '<input type="text" id="reviewCityInput" class="form-input" placeholder="e.g. Lahore, Karachi" maxlength="60">' +
+          '</div>' +
+          '</div>' +
+          '<div class="form-field">' +
+          '<div class="field-label-row">' +
+          '<label for="reviewTitleInput">Review Title (Optional)</label>' +
+          '<span class="char-counter" id="reviewTitleCounter">0 / 100</span>' +
+          '</div>' +
+          '<input type="text" id="reviewTitleInput" class="form-input" placeholder="e.g. Sculptural silhouette &amp; silky leather" maxlength="100">' +
+          '</div>' +
+          '<div class="form-field">' +
+          '<div class="field-label-row">' +
+          '<label for="reviewCommentInput">Your Review *</label>' +
+          '<span class="char-counter" id="reviewCommentCounter">0 / 1000</span>' +
+          '</div>' +
+          '<textarea id="reviewCommentInput" class="form-input" rows="4" placeholder="Tell us about the leather, hardware, colour, and how you style it (10 to 1,000 characters)..." minlength="10" maxlength="1000" required></textarea>' +
+          '</div>' +
+          '<button type="submit" class="btn btn-primary" id="reviewSubmitBtn" style="width:100%;">Submit Review</button>' +
+          '</form>' +
+          '</div>' +
+          '</div>' +
+          '<div class="reviews-right-col">' +
+          '<div id="pdpApprovedReviewsList" class="reviews-list">' +
+          '<!-- Populated by renderReviewsList -->' +
+          '</div>' +
+          '<div id="pdpLoadMoreWrap" class="reviews-load-more-wrap" hidden>' +
+          '<button type="button" class="btn btn-outline" id="pdpLoadMoreReviewsBtn">Load More Reviews</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>';
+
+        bindReviewFormEvents(product);
+      }
+
+      function renderSummaryAndBreakdown(list) {
+        const summaryBox = document.getElementById('pdpReviewsSummaryBox');
+        if (!summaryBox) return;
+
+        const total = list.length;
+        const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        let sum = 0;
+
+        list.forEach(function (r) {
+          const rt = Math.max(1, Math.min(5, Math.round(Number(r.rating) || 5)));
+          counts[rt] = (counts[rt] || 0) + 1;
+          sum += rt;
+        });
+
+        const avg = total > 0 ? Number((sum / total).toFixed(1)) : 0;
+
+        // Update header rating slot & JSON-LD only when approved reviews exist
+        const headerSlot = document.getElementById('pdpHeaderRatingSlot');
+        if (headerSlot) {
+          headerSlot.innerHTML =
+            total > 0 && avg > 0
+              ? '<a href="#pdpReviewsSection" class="pdp-info__rating">' +
+                renderStarString(avg) +
+                ' ' +
+                escapeHTML(avg.toFixed(1)) +
+                ' (' +
+                escapeHTML(total) +
+                ' ' +
+                (total === 1 ? 'Review' : 'Reviews') +
+                ')</a>'
+              : '';
+        }
+        updateProductJsonLd(product, avg, total);
+
+        const barsHtml = [5, 4, 3, 2, 1]
+          .map(function (star) {
+            const c = counts[star] || 0;
+            const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+            return (
+              '<div class="rating-bar-row">' +
+              '<span class="rating-bar-label">' +
+              star +
+              ' &#9733;</span>' +
+              '<div class="rating-bar-track" aria-hidden="true">' +
+              '<div class="rating-bar-fill" style="width:' +
+              pct +
+              '%;"></div>' +
+              '</div>' +
+              '<span class="rating-bar-count">' +
+              c +
+              '</span>' +
+              '</div>'
+            );
+          })
+          .join('');
+
+        summaryBox.innerHTML =
+          '<div class="reviews-summary-top">' +
+          '<div class="reviews-avg-number">' +
+          (total > 0 ? escapeHTML(avg.toFixed(1)) : '&mdash;') +
+          '</div>' +
+          '<div>' +
+          '<div class="reviews-avg-stars" aria-label="' +
+          (total > 0 ? escapeHTML(avg.toFixed(1)) + ' out of 5 stars' : 'No ratings yet') +
+          '">' +
+          (total > 0 ? renderStarString(avg) : '&#9734;&#9734;&#9734;&#9734;&#9734;') +
+          '</div>' +
+          '<div class="reviews-avg-count">' +
+          (total > 0
+            ? 'Based on ' + escapeHTML(total) + ' Approved ' + (total === 1 ? 'Review' : 'Reviews')
+            : 'No approved reviews yet') +
+          '</div>' +
+          '</div>' +
+          '</div>' +
+          '<div class="rating-breakdown" aria-label="Rating breakdown by star level">' +
+          barsHtml +
+          '</div>';
+      }
+
+      function renderReviewsList() {
+        const listEl = document.getElementById('pdpApprovedReviewsList');
+        const loadMoreWrap = document.getElementById('pdpLoadMoreWrap');
+        const loadMoreBtn = document.getElementById('pdpLoadMoreReviewsBtn');
+        if (!listEl) return;
+
+        if (approvedReviews.length === 0) {
+          listEl.innerHTML =
+            '<div class="reviews-empty-state">' +
+            '<h3 style="font-family:var(--font-heading); font-size:1.55rem; margin-bottom:0.45rem;">Be the First to Review This Piece</h3>' +
+            '<p style="color:var(--color-charcoal-soft); font-size:0.9rem; max-width:440px; margin:0 auto;">' +
+            'We welcome your impressions of ' +
+            escapeHTML(product.name) +
+            '. Every review is moderated by our atelier team before publication.' +
+            '</p>' +
+            '</div>';
+          if (loadMoreWrap) loadMoreWrap.hidden = true;
+          return;
+        }
+
+        const visibleItems = approvedReviews.slice(0, visibleCount);
+        listEl.innerHTML = visibleItems
+          .map(function (r) {
+            const stars = renderStarString(r.rating || 5);
+            const dateStr = formatReviewDate(r.created_at);
+            const authorLocation = r.reviewer_city
+              ? escapeHTML(r.reviewer_name) + ' &bull; ' + escapeHTML(r.reviewer_city)
+              : escapeHTML(r.reviewer_name);
+
+            return (
+              '<article class="review-item">' +
+              '<div class="review-item__header">' +
+              '<span class="review-item__stars" aria-label="Rated ' +
+              escapeHTML(r.rating || 5) +
+              ' out of 5 stars">' +
+              stars +
+              '</span>' +
+              (dateStr ? '<span class="review-item__date">' + escapeHTML(dateStr) + '</span>' : '') +
+              '</div>' +
+              (r.title
+                ? '<h4 class="review-item__title">' + escapeHTML(r.title) + '</h4>'
+                : '') +
+              '<p class="review-item__comment">' +
+              escapeHTML(r.comment) +
+              '</p>' +
+              '<div class="review-item__author">' +
+              '<strong>' +
+              authorLocation +
+              '</strong>' +
+              '<span class="review-item__verified">Verified Atelier Review</span>' +
+              '</div>' +
+              '</article>'
+            );
+          })
+          .join('');
+
+        if (loadMoreWrap && loadMoreBtn) {
+          const remaining = approvedReviews.length - visibleCount;
+          if (remaining > 0) {
+            loadMoreWrap.hidden = false;
+            loadMoreBtn.textContent = 'Load More Reviews (' + remaining + ' more)';
+          } else {
+            loadMoreWrap.hidden = true;
+          }
+        }
+      }
+
+      const loadMoreBtn = document.getElementById('pdpLoadMoreReviewsBtn');
+      if (loadMoreBtn) {
+        loadMoreBtn.onclick = function () {
+          visibleCount += VISIBLE_STEP;
+          renderReviewsList();
+        };
+      }
+
+      function bindReviewFormEvents(currentProduct) {
+        const form = document.getElementById('pdpReviewForm');
+        const starPicker = document.getElementById('reviewStarPicker');
+        const starCaption = document.getElementById('reviewStarCaption');
+        const ratingInput = document.getElementById('reviewRatingValue');
+        const nameInput = document.getElementById('reviewNameInput');
+        const cityInput = document.getElementById('reviewCityInput');
+        const titleInput = document.getElementById('reviewTitleInput');
+        const commentInput = document.getElementById('reviewCommentInput');
+        const nameCounter = document.getElementById('reviewNameCounter');
+        const cityCounter = document.getElementById('reviewCityCounter');
+        const titleCounter = document.getElementById('reviewTitleCounter');
+        const commentCounter = document.getElementById('reviewCommentCounter');
+        const honeypotInput = document.getElementById('reviewWebsiteTrap');
+        const feedbackEl = document.getElementById('reviewFormFeedback');
+        const submitBtn = document.getElementById('reviewSubmitBtn');
+
+        if (!form) return;
+
+        let formLoadedAt = Date.now();
+        let selectedRating = 0;
+        const ratingCaptions = {
+          1: '1 Star — Poor',
+          2: '2 Stars — Fair',
+          3: '3 Stars — Good',
+          4: '4 Stars — Very Good',
+          5: '5 Stars — Exquisite'
+        };
+
+        function setFeedback(message, type) {
+          if (!feedbackEl) return;
+          if (!message) {
+            feedbackEl.hidden = true;
+            feedbackEl.textContent = '';
+            feedbackEl.className = 'review-form-msg';
+            return;
+          }
+          feedbackEl.hidden = false;
+          feedbackEl.className =
+            'review-form-msg ' +
+            (type === 'success' ? 'review-form-msg--success' : 'review-form-msg--error');
+          feedbackEl.textContent = message;
+        }
+
+        function updateStarsUI(val) {
+          if (!starPicker) return;
+          starPicker.querySelectorAll('.star-picker-btn').forEach(function (btn) {
+            const bVal = parseInt(btn.getAttribute('data-star-value'), 10);
+            const lit = bVal <= val;
+            btn.classList.toggle('is-Lit', lit);
+            btn.setAttribute('aria-pressed', bVal === val ? 'true' : 'false');
+          });
+          if (starCaption) {
+            starCaption.textContent = ratingCaptions[val] || 'Select stars';
+          }
+          if (ratingInput) {
+            ratingInput.value = String(val);
+          }
+        }
+
+        if (starPicker) {
+          starPicker.addEventListener('click', function (e) {
+            const btn = e.target.closest('[data-star-value]');
+            if (!btn) return;
+            selectedRating = parseInt(btn.getAttribute('data-star-value'), 10) || 0;
+            updateStarsUI(selectedRating);
+            setFeedback('', '');
+          });
+        }
+
+        function bindCounter(inputEl, counterEl, maxLen) {
+          if (!inputEl || !counterEl) return;
+          const update = function () {
+            counterEl.textContent = inputEl.value.length + ' / ' + maxLen;
+          };
+          inputEl.addEventListener('input', update);
+          update();
+        }
+
+        bindCounter(nameInput, nameCounter, 60);
+        bindCounter(cityInput, cityCounter, 60);
+        bindCounter(titleInput, titleCounter, 100);
+        bindCounter(commentInput, commentCounter, 1000);
+
+        function resetReviewForm() {
+          form.reset();
+          selectedRating = 0;
+          updateStarsUI(0);
+          if (nameCounter) nameCounter.textContent = '0 / 60';
+          if (cityCounter) cityCounter.textContent = '0 / 60';
+          if (titleCounter) titleCounter.textContent = '0 / 100';
+          if (commentCounter) commentCounter.textContent = '0 / 1000';
+          formLoadedAt = Date.now();
+        }
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          setFeedback('', '');
+
+          // 1. Honeypot check: reject silently if filled
+          if (honeypotInput && honeypotInput.value.trim() !== '') {
+            resetReviewForm();
+            setFeedback(
+              'Thank you! Your review will appear once our team approves it.',
+              'success'
+            );
+            return;
+          }
+
+          // 2. Field trimming & validation
+          const nameVal = nameInput ? nameInput.value.trim() : '';
+          const cityVal = cityInput ? cityInput.value.trim() : '';
+          const titleVal = titleInput ? titleInput.value.trim() : '';
+          const commentVal = commentInput ? commentInput.value.trim() : '';
+
+          if (!Number.isInteger(selectedRating) || selectedRating < 1 || selectedRating > 5) {
+            setFeedback('Please select a star rating between 1 and 5.', 'error');
+            return;
+          }
+          if (nameVal.length < 2 || nameVal.length > 60) {
+            setFeedback('Please enter your name (between 2 and 60 characters).', 'error');
+            if (nameInput) nameInput.focus();
+            return;
+          }
+          if (cityVal.length > 60) {
+            setFeedback('City name must be 60 characters or fewer.', 'error');
+            if (cityInput) cityInput.focus();
+            return;
+          }
+          if (titleVal.length > 100) {
+            setFeedback('Review title must be 100 characters or fewer.', 'error');
+            if (titleInput) titleInput.focus();
+            return;
+          }
+          if (commentVal.length < 10 || commentVal.length > 1000) {
+            setFeedback(
+              'Please write a review comment between 10 and 1,000 characters.',
+              'error'
+            );
+            if (commentInput) commentInput.focus();
+            return;
+          }
+
+          // 3. Minimum 3-second time-on-form check
+          if (Date.now() - formLoadedAt < 3000) {
+            setFeedback(
+              'Please take a moment to review your entry before submitting.',
+              'error'
+            );
+            return;
+          }
+
+          // 4. 60-second cooldown between submissions stored in localStorage
+          try {
+            const lastSubmittedTs = Number(localStorage.getItem(REVIEW_COOLDOWN_KEY) || 0);
+            if (lastSubmittedTs && Date.now() - lastSubmittedTs < 60000) {
+              const waitSec = Math.ceil((60000 - (Date.now() - lastSubmittedTs)) / 1000);
+              setFeedback(
+                'Please wait ' + waitSec + ' seconds before submitting another review.',
+                'error'
+              );
+              return;
+            }
+          } catch (err) {
+            // Ignore storage access errors
+          }
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting Review...';
+          }
+
+          try {
+            const res =
+              window.HandleHueData && typeof window.HandleHueData.submitReview === 'function'
+                ? await window.HandleHueData.submitReview({
+                    product_id: currentProduct.uuid || currentProduct.id,
+                    reviewer_name: nameVal,
+                    reviewer_city: cityVal,
+                    rating: selectedRating,
+                    title: titleVal,
+                    comment: commentVal
+                  })
+                : { ok: false, error: 'Review service is unavailable.' };
+
+            if (!res || !res.ok) {
+              setFeedback(
+                (res && res.error) || 'Could not submit your review. Please try again.',
+                'error'
+              );
+              return;
+            }
+
+            try {
+              localStorage.setItem(REVIEW_COOLDOWN_KEY, String(Date.now()));
+            } catch (err) {
+              // Ignore localStorage write errors
+            }
+
+            resetReviewForm();
+            setFeedback(
+              'Thank you! Your review will appear once our team approves it.',
+              'success'
+            );
+            store.showToast('Thank you! Your review will appear once our team approves it.');
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Submit Review';
+            }
+          }
+        });
+      }
+
+      // Render initial empty summary/list immediately, then fetch approved reviews
+      renderSummaryAndBreakdown([]);
+      renderReviewsList();
+
+      if (window.HandleHueData && typeof window.HandleHueData.getApprovedReviews === 'function') {
+        window.HandleHueData
+          .getApprovedReviews(product.uuid || product.id)
+          .then(function (items) {
+            approvedReviews = Array.isArray(items) ? items : [];
+            visibleCount = VISIBLE_STEP;
+            renderSummaryAndBreakdown(approvedReviews);
+            renderReviewsList();
+          })
+          .catch(function () {
+            if (reviewsSection) {
+              renderSummaryAndBreakdown([]);
+              renderReviewsList();
+            }
+          });
+      }
     }
 
     renderPDP();

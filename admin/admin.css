@@ -386,25 +386,45 @@ button {
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  flex-wrap: wrap;
 }
 
 .admin-nav-tab {
   min-height: 40px;
-  padding: 0.45rem 1rem;
-  font-size: 0.74rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.73rem;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.14em;
   color: var(--color-charcoal-soft);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .admin-nav-tab.is-active {
   background-color: var(--color-charcoal);
   color: var(--color-ivory);
   border-color: var(--color-gold);
+}
+
+.admin-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.38rem;
+  border-radius: 999px;
+  background-color: var(--color-gold);
+  color: var(--color-charcoal);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .admin-header-actions {
@@ -590,6 +610,97 @@ button {
   background-color: rgba(158, 59, 59, 0.12);
   color: var(--color-danger);
   border: 1px solid rgba(158, 59, 59, 0.3);
+}
+
+.admin-status-badge--pending {
+  background-color: rgba(201, 166, 107, 0.2);
+  color: #7D5E29;
+  border: 1px solid var(--color-gold);
+}
+
+.admin-status-badge--approved {
+  background-color: rgba(59, 110, 82, 0.12);
+  color: var(--color-success);
+  border: 1px solid rgba(59, 110, 82, 0.3);
+}
+
+.admin-status-badge--rejected {
+  background-color: rgba(158, 59, 59, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(158, 59, 59, 0.3);
+}
+
+/* Reviews Moderation Toolbar & Cells */
+.admin-reviews-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.admin-status-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.admin-status-pill {
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-gold-border);
+  background-color: var(--color-ivory-pure);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--color-charcoal-soft);
+  transition: all 0.2s ease;
+}
+
+.admin-status-pill:hover {
+  border-color: var(--color-gold);
+  background-color: var(--color-blush-light);
+}
+
+.admin-status-pill.is-active {
+  background-color: var(--color-charcoal);
+  color: var(--color-ivory);
+  border-color: var(--color-gold);
+}
+
+.admin-reviews-search {
+  flex: 1;
+  min-width: 240px;
+  max-width: 400px;
+}
+
+.admin-review-stars {
+  color: var(--color-gold);
+  letter-spacing: 0.12em;
+  font-size: 0.88rem;
+  margin-bottom: 0.2rem;
+}
+
+.admin-review-title {
+  font-family: var(--font-heading);
+  font-size: 1.08rem;
+  font-weight: 600;
+  color: var(--color-charcoal);
+  margin-bottom: 0.15rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-review-comment {
+  font-size: 0.86rem;
+  color: var(--color-charcoal-soft);
+  line-height: 1.55;
+  max-width: 440px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .admin-flags-group {
@@ -954,6 +1065,13 @@ button {
   }
   .admin-filters-bar {
     grid-template-columns: 1fr;
+  }
+  .admin-reviews-search {
+    min-width: 100%;
+    max-width: 100%;
+  }
+  .admin-review-comment {
+    max-width: 100%;
   }
   .admin-form-grid {
     grid-template-columns: 1fr;

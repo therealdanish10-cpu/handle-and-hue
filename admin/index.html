@@ -67,6 +67,10 @@
           <button type="button" class="admin-nav-tab is-active" data-admin-tab="products" id="tabBtnProducts">
             Products Catalog
           </button>
+          <button type="button" class="admin-nav-tab" data-admin-tab="reviews" id="tabBtnReviews">
+            <span>Reviews</span>
+            <span id="adminPendingReviewsBadge" class="admin-tab-badge" hidden>0</span>
+          </button>
           <button type="button" class="admin-nav-tab" data-admin-tab="settings" id="tabBtnSettings">
             Boutique Settings
           </button>
@@ -224,6 +228,89 @@
                 </button>
               </div>
             </form>
+          </div>
+        </section>
+
+        <!-- ================================================================
+             TAB 3: CUSTOMER REVIEWS MODERATION
+             ================================================================ -->
+        <section id="tabPanelReviews" class="admin-tab-panel" hidden>
+          <!-- Reviews KPI Row -->
+          <div class="admin-stats-grid">
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Pending Approval</span>
+              <strong class="admin-stat-value" id="statReviewsPending">0</strong>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Approved</span>
+              <strong class="admin-stat-value" id="statReviewsApproved">0</strong>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">Rejected</span>
+              <strong class="admin-stat-value" id="statReviewsRejected">0</strong>
+            </div>
+            <div class="admin-stat-card">
+              <span class="admin-stat-label">On Homepage</span>
+              <strong class="admin-stat-value" id="statReviewsHomepage">0</strong>
+            </div>
+          </div>
+
+          <div class="admin-section-bar">
+            <div>
+              <span class="admin-eyebrow">Atelier Moderation Queue</span>
+              <h1 class="admin-section-title">Customer <em>Reviews</em></h1>
+            </div>
+            <div class="admin-section-actions">
+              <button type="button" id="refreshReviewsBtn" class="admin-btn admin-btn--outline">
+                Refresh Reviews
+              </button>
+            </div>
+          </div>
+
+          <div id="reviewsDbNoticeBanner" class="admin-alert admin-alert--warning" hidden></div>
+
+          <!-- Status Filter Pills & Search Bar -->
+          <div class="admin-reviews-toolbar">
+            <div class="admin-status-pills" id="adminReviewStatusFilters" role="group" aria-label="Filter reviews by status">
+              <button type="button" class="admin-status-pill is-active" data-review-status-filter="pending">
+                Pending <span id="filterCountPending">(0)</span>
+              </button>
+              <button type="button" class="admin-status-pill" data-review-status-filter="approved">
+                Approved <span id="filterCountApproved">(0)</span>
+              </button>
+              <button type="button" class="admin-status-pill" data-review-status-filter="rejected">
+                Rejected <span id="filterCountRejected">(0)</span>
+              </button>
+              <button type="button" class="admin-status-pill" data-review-status-filter="all">
+                All <span id="filterCountAll">(0)</span>
+              </button>
+            </div>
+
+            <div class="admin-reviews-search">
+              <label for="adminReviewsSearchInput" class="sr-only">Search Reviews</label>
+              <input type="search" id="adminReviewsSearchInput" class="admin-input" placeholder="Search by product, reviewer, city, title, or comment...">
+            </div>
+          </div>
+
+          <!-- Reviews Table / Responsive Mobile Cards -->
+          <div class="admin-card-surface">
+            <div class="admin-table-wrap">
+              <table class="admin-table" aria-label="Customer Reviews Moderation">
+                <thead>
+                  <tr>
+                    <th>Product &amp; Date</th>
+                    <th>Reviewer</th>
+                    <th>Rating &amp; Review</th>
+                    <th>Status</th>
+                    <th>Homepage</th>
+                    <th style="text-align:right;">Moderation Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="adminReviewsTableBody">
+                  <!-- Populated by admin/admin.js -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
