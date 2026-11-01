@@ -1382,3 +1382,86 @@ h1, h2, h3, h4, h5, h6 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   11. Sold-Out States & Soft Luxury Loading Skeletons
+   ========================================================================== */
+.product-card__badge--soldout {
+  background-color: var(--color-charcoal);
+  color: var(--color-ivory);
+  border-color: var(--color-gold);
+}
+
+.product-card.is-sold-out .product-card__img {
+  filter: grayscale(18%) opacity(0.86);
+}
+
+.product-card__quick-add.is-disabled,
+.product-card__quick-add:disabled {
+  background-color: rgba(43, 43, 43, 0.72);
+  color: rgba(250, 246, 240, 0.75);
+  border-color: rgba(201, 166, 107, 0.35);
+  cursor: not-allowed;
+}
+
+.btn.is-disabled,
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes hhSoftPulse {
+  0%, 100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+.skeleton-card {
+  background-color: var(--color-ivory-pure);
+  border: 1px solid rgba(201, 166, 107, 0.22);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: hhSoftPulse 1.6s ease-in-out infinite;
+}
+
+.skeleton-card__media {
+  aspect-ratio: 4 / 4.5;
+  background: linear-gradient(135deg, var(--color-blush-light) 0%, var(--color-ivory-warm) 100%);
+}
+
+.skeleton-card__body {
+  padding: 1.15rem 1.2rem 1.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 4px;
+  background-color: rgba(201, 166, 107, 0.18);
+}
+
+.skeleton-line--short {
+  width: 45%;
+  height: 10px;
+}
+
+.skeleton-line--title {
+  width: 82%;
+  height: 18px;
+}
+
+.skeleton-line--price {
+  width: 38%;
+  height: 14px;
+}
+

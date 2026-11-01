@@ -4,7 +4,8 @@
  * ============================================================================
  * Persists shopping bag and wishlist items in localStorage.
  * Uses window.formatPKR(amount) everywhere for Pakistani Rupee (PKR) formatting.
- * Synchronizes navbar badges, slide-in drawers, and toast notifications.
+ * Synchronizes with Supabase data layer (`window.HandleHueData`), navbar badges,
+ * slide-in drawers, and toast notifications.
  * ============================================================================
  */
 
@@ -13,11 +14,29 @@
 
   const CART_STORAGE_KEY = 'handle_hue_cart_pkr_v1';
   const WISHLIST_STORAGE_KEY = 'handle_hue_wishlist_v1';
-  const formatPKR = window.formatPKR || function (n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); };
+  const formatPKR =
+    window.formatPKR ||
+    function (n) {
+      return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString();
+    };
+  const escapeHTML =
+    window.escapeHTML ||
+    function (v) {
+      if (v === null || v === undefined) return '';
+      return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
 
   function findProduct(productId) {
+    if (window.HandleHueData && typeof window.HandleHueData.findProduct === 'function') {
+      return window.HandleHueData.findProduct(productId);
+    }
     return (window.HANDLE_HUE_PRODUCTS || []).find(function (p) {
-      return p.id === productId;
+      return p.id === productId || p.slug === productId || p.uuid === productId;
     });
   }
 
@@ -28,11 +47,15 @@
     try {
       const raw = localStorage.getItem(CART_STORAGE_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
-      // Ensure prices always stay synced with current PKR catalog prices
       return parsed.map(function (item) {
         const catalogProd = findProduct(item.id);
         if (catalogProd) {
           item.price = catalogProd.price;
+          item.name = catalogProd.name;
+          item.category = catalogProd.category;
+          if (catalogProd.images && catalogProd.images.primary) {
+            item.image = catalogProd.images.primary;
+          }
         }
         return item;
       });
@@ -57,21 +80,30 @@
     const product = findProduct(productId);
     if (!product) return;
 
+    if (product.inStock === false || product.in_stock === false) {
+      showToast('Sorry, "' + escapeHTML(product.name) + '" is currently sold out.');
+      return;
+    }
+
     const selectedColor =
       colorName ||
       product.primaryColor ||
       (product.colors && product.colors[0] ? product.colors[0].name : 'Signature Hue');
 
     const cart = getCart();
+    const canonicalId = product.id;
     const existingIndex = cart.findIndex(function (item) {
-      return item.id === productId && item.color === selectedColor;
+      return (
+        (item.id === canonicalId || item.id === productId) &&
+        item.color === selectedColor
+      );
     });
 
     if (existingIndex > -1) {
       cart[existingIndex].qty += qtyToAdd;
     } else {
       cart.push({
-        id: product.id,
+        id: canonicalId,
         name: product.name,
         price: product.price,
         color: selectedColor,
@@ -83,7 +115,13 @@
 
     saveCart(cart);
     showToast(
-      'Added "' + product.name + '" (' + selectedColor + ' — ' + formatPKR(product.price) + ') to your bag.'
+      'Added "' +
+        escapeHTML(product.name) +
+        '" (' +
+        escapeHTML(selectedColor) +
+        ' — ' +
+        formatPKR(product.price) +
+        ') to your bag.'
     );
 
     if (shouldOpen) {
@@ -158,20 +196,21 @@
 
   function toggleWishlist(productId) {
     const product = findProduct(productId);
+    const canonicalId = product ? product.id : productId;
     let list = getWishlist();
-    const exists = list.includes(productId);
+    const exists = list.includes(canonicalId) || list.includes(productId);
 
     if (exists) {
       list = list.filter(function (id) {
-        return id !== productId;
+        return id !== canonicalId && id !== productId;
       });
       saveWishlist(list);
-      if (product) showToast('Removed "' + product.name + '" from your wishlist.');
+      if (product) showToast('Removed "' + escapeHTML(product.name) + '" from your wishlist.');
       return false;
     } else {
-      list.push(productId);
+      list.push(canonicalId);
       saveWishlist(list);
-      if (product) showToast('Saved "' + product.name + '" to your wishlist.');
+      if (product) showToast('Saved "' + escapeHTML(product.name) + '" to your wishlist.');
       return true;
     }
   }
@@ -196,7 +235,6 @@
       badge.style.display = count > 0 ? 'flex' : 'none';
     });
 
-    // Update heart buttons across page
     document.querySelectorAll('[data-wishlist-btn]').forEach(function (btn) {
       const id = btn.getAttribute('data-wishlist-btn');
       const active = list.includes(id);
@@ -230,25 +268,29 @@
     bodyEl.innerHTML = cart
       .map(function (item) {
         const encodedId = encodeURIComponent(item.id);
+        const safeName = escapeHTML(item.name);
+        const safeColor = escapeHTML(item.color);
+        const safeImg = escapeHTML(item.image);
+        const safeIdAttr = escapeHTML(item.id);
         const lineTotal = formatPKR(item.price * item.qty);
         const unitFormatted = formatPKR(item.price);
         return (
           '<div class="drawer-item">' +
           '<a href="product.html?id=' + encodedId + '">' +
-          '<img src="' + item.image + '" alt="' + item.name + '" class="drawer-item-img">' +
+          '<img src="' + safeImg + '" alt="' + safeName + '" class="drawer-item-img">' +
           '</a>' +
           '<div>' +
-          '<a href="product.html?id=' + encodedId + '" class="drawer-item-title">' + item.name + '</a>' +
-          '<div class="drawer-item-meta">Hue: ' + item.color + ' &bull; ' + unitFormatted + '</div>' +
+          '<a href="product.html?id=' + encodedId + '" class="drawer-item-title">' + safeName + '</a>' +
+          '<div class="drawer-item-meta">Hue: ' + safeColor + ' &bull; ' + unitFormatted + '</div>' +
           '<div class="drawer-qty">' +
-          '<button type="button" aria-label="Decrease quantity" data-drawer-qty="' + item.id + '" data-drawer-color="' + item.color + '" data-delta="-1">&minus;</button>' +
-          '<span>' + item.qty + '</span>' +
-          '<button type="button" aria-label="Increase quantity" data-drawer-qty="' + item.id + '" data-drawer-color="' + item.color + '" data-delta="1">+</button>' +
+          '<button type="button" aria-label="Decrease quantity" data-drawer-qty="' + safeIdAttr + '" data-drawer-color="' + safeColor + '" data-delta="-1">&minus;</button>' +
+          '<span>' + Number(item.qty) + '</span>' +
+          '<button type="button" aria-label="Increase quantity" data-drawer-qty="' + safeIdAttr + '" data-drawer-color="' + safeColor + '" data-delta="1">+</button>' +
           '</div>' +
           '</div>' +
           '<div style="text-align:right;">' +
           '<div style="font-weight:500; margin-bottom:0.5rem;">' + lineTotal + '</div>' +
-          '<button type="button" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--color-charcoal-muted);" data-drawer-remove="' + item.id + '" data-drawer-color="' + item.color + '">Remove</button>' +
+          '<button type="button" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--color-charcoal-muted);" data-drawer-remove="' + safeIdAttr + '" data-drawer-color="' + safeColor + '">Remove</button>' +
           '</div>' +
           '</div>'
         );
@@ -280,17 +322,24 @@
     bodyEl.innerHTML = items
       .map(function (prod) {
         const encodedId = encodeURIComponent(prod.id);
+        const safeName = escapeHTML(prod.name);
+        const safeColor = escapeHTML(prod.primaryColor);
+        const safeImg = escapeHTML(prod.images.primary);
+        const safeIdAttr = escapeHTML(prod.id);
+        const isSoldOut = prod.inStock === false || prod.in_stock === false;
         return (
           '<div class="drawer-item">' +
           '<a href="product.html?id=' + encodedId + '">' +
-          '<img src="' + prod.images.primary + '" alt="' + prod.name + '" class="drawer-item-img">' +
+          '<img src="' + safeImg + '" alt="' + safeName + '" class="drawer-item-img">' +
           '</a>' +
           '<div>' +
-          '<a href="product.html?id=' + encodedId + '" class="drawer-item-title">' + prod.name + '</a>' +
-          '<div class="drawer-item-meta">' + prod.primaryColor + ' &bull; ' + formatPKR(prod.price) + '</div>' +
-          '<button type="button" class="link-arrow" style="font-size:0.68rem;" data-wishlist-move="' + prod.id + '">Move to Bag</button>' +
+          '<a href="product.html?id=' + encodedId + '" class="drawer-item-title">' + safeName + '</a>' +
+          '<div class="drawer-item-meta">' + safeColor + ' &bull; ' + formatPKR(prod.price) + '</div>' +
+          (isSoldOut
+            ? '<span style="font-size:0.68rem; text-transform:uppercase; letter-spacing:0.14em; color:var(--color-charcoal-muted);">Sold Out</span>'
+            : '<button type="button" class="link-arrow" style="font-size:0.68rem;" data-wishlist-move="' + safeIdAttr + '">Move to Bag</button>') +
           '</div>' +
-          '<button type="button" aria-label="Remove from wishlist" style="font-size:1.1rem; color:var(--color-charcoal-muted);" data-wishlist-remove="' + prod.id + '">&times;</button>' +
+          '<button type="button" aria-label="Remove from wishlist" style="font-size:1.1rem; color:var(--color-charcoal-muted);" data-wishlist-remove="' + safeIdAttr + '">&times;</button>' +
           '</div>'
         );
       })
@@ -338,7 +387,9 @@
     toast.className = 'toast';
     toast.innerHTML =
       '<span style="color: var(--color-gold); font-size:1rem;">&#10022;</span>' +
-      '<span>' + message + '</span>';
+      '<span>' +
+      message +
+      '</span>';
     container.appendChild(toast);
 
     setTimeout(function () {
@@ -387,6 +438,11 @@
       toggleWishlist(wishRm.getAttribute('data-wishlist-remove'));
       return;
     }
+  });
+
+  window.addEventListener('handlehue:data-loaded', function () {
+    syncCartUI();
+    syncWishlistUI();
   });
 
   window.HandleHueStore = {

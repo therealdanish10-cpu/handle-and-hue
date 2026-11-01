@@ -2,28 +2,26 @@
  * ============================================================================
  * HANDLE & HUE — Main Application Controller (js/main.js)
  * ============================================================================
- * Adapted for the Pakistan Market (PKR Currency via window.formatPKR &
- * WhatsApp Checkout via window.WHATSAPP_NUMBER = 923469377256):
- * - Sticky transparent-to-ivory navbar & mobile slide-in drawer
- * - Floating WhatsApp chat button on every page
- * - Live search overlay with PKR pricing
- * - Product card rendering & quick-add / swatch / wishlist interactions
- * - Home page sections (Categories, New Arrivals, Shop by Color, Bestsellers)
- * - Shop page filtering (collapsible mobile filter panel, Category, Color,
- *   Price Range in PKR, Search) & sorting
- * - Product Detail page (Gallery with desktop hover zoom, disabled on touch,
- *   "Buy on WhatsApp" button, Swatches, Accordions, Related)
- * - Cart & Checkout page ("Order on WhatsApp" button, Rs. 10,000 free shipping
- *   threshold, flat Rs. 250 fee, HUE10 / WELCOME10 promo codes, Pakistan
- *   province dropdown, COD / Bank Transfer / JazzCash / Easypaisa options)
- * - Contact page form & FAQ accordions
+ * Powered by `window.HandleHueData` (Supabase + Static Fallback Data Layer):
+ * - Sticky transparent-to-ivory navbar, dynamic announcement bar & mobile drawer
+ * - Floating WhatsApp chat button synced with settings.whatsapp_number
+ * - Soft Luxury skeleton placeholders while loading data with zero layout jump
+ * - Live search overlay with PKR pricing & XSS-escaped output
+ * - Product card rendering with Sold Out badge & disabled buttons when in_stock=false
+ * - Home page sections using `is_new`, `is_bestseller`, and `is_featured` flags
+ * - Shop page filtering (Category, Color, Max Price in PKR, Search) & sorting
+ * - Product Detail page (Multi-image gallery, hover zoom on desktop, disabled
+ *   Add to Cart & Buy on WhatsApp when Sold Out, Related products)
+ * - Cart & Checkout page (Dynamic `shipping_fee`, `free_shipping_threshold`,
+ *   and `whatsapp_number` from settings, HUE10 / WELCOME10 promo codes,
+ *   Order on WhatsApp flow)
+ * - Contact page form & FAQ accordions synced with settings
  * ============================================================================
  */
 
 (function () {
   'use strict';
 
-  const products = window.HANDLE_HUE_PRODUCTS || [];
   const colors = window.HANDLE_HUE_COLORS || [];
   const categories = window.HANDLE_HUE_CATEGORIES || [];
   const store = window.HandleHueStore;
@@ -32,17 +30,128 @@
     function (n) {
       return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString();
     };
-  const WHATSAPP_NUMBER = window.WHATSAPP_NUMBER || '923469377256';
-  const buildWhatsAppUrl =
-    window.buildWhatsAppUrl ||
-    function (msg) {
-      const base = 'https://wa.me/' + WHATSAPP_NUMBER;
-      return msg ? base + '?text=' + encodeURIComponent(msg) : base;
+  const escapeHTML =
+    window.escapeHTML ||
+    function (v) {
+      if (v === null || v === undefined) return '';
+      return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     };
 
+  function getProducts() {
+    if (window.HandleHueData && typeof window.HandleHueData.getProducts === 'function') {
+      return window.HandleHueData.getProducts();
+    }
+    return window.HANDLE_HUE_PRODUCTS || [];
+  }
+
+  function getSettings() {
+    if (window.HandleHueData && typeof window.HandleHueData.getSettings === 'function') {
+      return window.HandleHueData.getSettings();
+    }
+    return {
+      whatsapp_number: window.WHATSAPP_NUMBER || '923469377256',
+      whatsapp_display: window.WHATSAPP_DISPLAY || '+92 346 9377256',
+      whatsapp_tel: window.WHATSAPP_TEL || '+923469377256',
+      shipping_fee:
+        (window.HANDLE_HUE_SHIPPING_CONFIG &&
+          window.HANDLE_HUE_SHIPPING_CONFIG.flatShippingFee) ||
+        250,
+      free_shipping_threshold:
+        (window.HANDLE_HUE_SHIPPING_CONFIG &&
+          window.HANDLE_HUE_SHIPPING_CONFIG.freeShippingThreshold) ||
+        10000,
+      announcement_text:
+        'Free Nationwide Delivery Across Pakistan Over Rs. 10,000 • Welcome Privilege Code: HUE10'
+    };
+  }
+
+  function buildWhatsAppUrl(message) {
+    const settings = getSettings();
+    const num = String(settings.whatsapp_number || '923469377256').replace(/\D/g, '');
+    const base = 'https://wa.me/' + num;
+    return message ? base + '?text=' + encodeURIComponent(message) : base;
+  }
+
   /* ==========================================================================
-     1. Sticky Navbar, Mobile Drawer, Global Overlays & Floating WhatsApp Button
+     0. Soft Loading Skeleton Helper (No Layout Jumps)
      ========================================================================== */
+  function renderSkeletonGrid(count) {
+    const n = Number(count) || 4;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      html +=
+        '<div class="skeleton-card" aria-hidden="true">' +
+        '<div class="skeleton-card__media"></div>' +
+        '<div class="skeleton-card__body">' +
+        '<div class="skeleton-line skeleton-line--short"></div>' +
+        '<div class="skeleton-line skeleton-line--title"></div>' +
+        '<div class="skeleton-line skeleton-line--price"></div>' +
+        '</div>' +
+        '</div>';
+    }
+    return html;
+  }
+
+  /* ==========================================================================
+     1. Sticky Navbar, Settings Sync, Global Overlays & Floating WhatsApp
+     ========================================================================== */
+  function syncSettingsAcrossDOM() {
+    const settings = getSettings();
+    const waNumber = settings.whatsapp_number;
+    const waDisplay = settings.whatsapp_display;
+    const waTel = settings.whatsapp_tel;
+
+    // 1. Top Announcement Bar
+    document.querySelectorAll('.announcement-bar').forEach(function (bar) {
+      const text = (settings.announcement_text || '').trim();
+      if (!text) {
+        bar.style.display = 'none';
+      } else {
+        bar.style.display = '';
+        // Highlight HUE10 or WELCOME10 in gold span if present
+        const escaped = escapeHTML(text).replace(
+          /\b(HUE10|WELCOME10)\b/g,
+          '<span>$1</span>'
+        );
+        bar.innerHTML = escaped;
+      }
+    });
+
+    // 2. Update Floating WhatsApp Button
+    initFloatingWhatsAppButton();
+
+    // 3. Update Footer, Mobile Drawer & Contact Page WhatsApp / Phone Links
+    document.querySelectorAll('.footer-social-link[aria-label*="WhatsApp"]').forEach(function (a) {
+      a.href = 'https://wa.me/' + encodeURIComponent(waNumber);
+    });
+
+    document.querySelectorAll('.mobile-drawer-footer a[href*="wa.me"], .concierge-card a[href*="wa.me"], .faq-accordion a[href*="wa.me"]').forEach(function (a) {
+      const hasQuery = a.href.includes('?text=');
+      if (hasQuery) {
+        a.href = buildWhatsAppUrl('Hi Handle & Hue, I would like to know more about your bags.');
+      } else {
+        a.href = 'https://wa.me/' + encodeURIComponent(waNumber);
+      }
+      if (!a.classList.contains('btn')) {
+        a.textContent = waDisplay;
+      }
+    });
+
+    document.querySelectorAll('.mobile-drawer-footer a[href^="tel:"], .concierge-card a[href^="tel:"]').forEach(function (a) {
+      a.href = 'tel:' + waTel;
+      if (a.classList.contains('btn')) {
+        a.textContent = 'Call ' + waDisplay;
+      } else {
+        a.textContent = waDisplay;
+      }
+    });
+  }
+
   function initHeaderAndDrawers() {
     const header = document.getElementById('siteHeader');
     if (header) {
@@ -57,7 +166,6 @@
       onScroll();
     }
 
-    // Mobile Menu Trigger
     const mobileBtn = document.getElementById('mobileMenuBtn');
     if (mobileBtn) {
       mobileBtn.addEventListener('click', function () {
@@ -65,7 +173,6 @@
       });
     }
 
-    // Cart Drawer Trigger
     document.querySelectorAll('[data-open-cart]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         if (window.location.pathname.endsWith('cart.html')) return;
@@ -74,7 +181,6 @@
       });
     });
 
-    // Wishlist Drawer Trigger
     document.querySelectorAll('[data-open-wishlist]').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -82,7 +188,6 @@
       });
     });
 
-    // Search Overlay Trigger
     const searchOverlay = document.getElementById('searchOverlay');
     const searchInput = document.getElementById('globalSearchInput');
     document.querySelectorAll('[data-open-search]').forEach(function (btn) {
@@ -101,7 +206,6 @@
       });
     });
 
-    // Close Buttons & Backdrop
     document.querySelectorAll('[data-close-drawer]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         store.closeAllDrawers();
@@ -123,6 +227,7 @@
     const searchPreview = document.getElementById('globalSearchPreview');
     if (searchInput && searchPreview) {
       const renderSearchPreview = function (query) {
+        const products = getProducts();
         const q = (query || '').trim().toLowerCase();
         const matches = q
           ? products.filter(function (p) {
@@ -130,7 +235,7 @@
                 p.name.toLowerCase().includes(q) ||
                 p.category.toLowerCase().includes(q) ||
                 p.primaryColor.toLowerCase().includes(q) ||
-                p.subtitle.toLowerCase().includes(q)
+                (p.subtitle && p.subtitle.toLowerCase().includes(q))
               );
             })
           : products.slice(0, 4);
@@ -138,7 +243,7 @@
         if (matches.length === 0) {
           searchPreview.innerHTML =
             '<p style="grid-column: 1/-1; color: var(--color-charcoal-soft); font-size:0.9rem;">No pieces found matching "' +
-            query +
+            escapeHTML(query) +
             '". Try searching for "Tote", "Blush", or "Clutch".</p>';
           return;
         }
@@ -146,23 +251,25 @@
         searchPreview.innerHTML = matches
           .slice(0, 4)
           .map(function (p) {
+            const isSoldOut = p.inStock === false || p.in_stock === false;
             return (
               '<a href="product.html?id=' +
               encodeURIComponent(p.id) +
               '" style="display:flex; align-items:center; gap:0.8rem; padding:0.65rem; background:var(--color-ivory-pure); border:var(--border-thin); border-radius:var(--radius-sm);">' +
               '<img src="' +
-              p.images.primary +
+              escapeHTML(p.images.primary) +
               '" alt="' +
-              p.name +
+              escapeHTML(p.name) +
               '" style="width:54px; height:62px; object-fit:cover; border-radius:4px;">' +
               '<div>' +
               '<div style="font-family:var(--font-heading); font-weight:600; font-size:1.05rem;">' +
-              p.name +
+              escapeHTML(p.name) +
               '</div>' +
               '<div style="font-size:0.76rem; color:var(--color-charcoal-muted);">' +
-              p.primaryColor +
+              escapeHTML(p.primaryColor) +
               ' &bull; ' +
               formatPKR(p.price) +
+              (isSoldOut ? ' &bull; <strong>Sold out</strong>' : '') +
               '</div>' +
               '</div>' +
               '</a>'
@@ -174,10 +281,12 @@
       searchInput.addEventListener('input', function (e) {
         renderSearchPreview(e.target.value);
       });
+      window.addEventListener('handlehue:data-loaded', function () {
+        renderSearchPreview(searchInput.value);
+      });
       renderSearchPreview('');
     }
 
-    // Floating WhatsApp Chat Button on Every Page
     initFloatingWhatsAppButton();
   }
 
@@ -209,10 +318,28 @@
   function renderProductCard(product, staggerIndex) {
     const idx = Number(staggerIndex) || 0;
     const wished = store.isInWishlist(product.id);
+    const isSoldOut = product.inStock === false || product.in_stock === false;
     const delayClass = idx > 0 ? 'delay-' + ((idx % 4) + 1) : '';
-    const badgeClass =
-      product.badge === 'Limited Hue' ? 'product-card__badge--gold' : '';
+
+    let badgeLabel = product.badge || '';
+    if (isSoldOut) {
+      badgeLabel = 'Sold out';
+    }
+
+    let badgeClass = '';
+    if (isSoldOut) {
+      badgeClass = 'product-card__badge--soldout';
+    } else if (badgeLabel === 'Limited Hue' || badgeLabel === 'Sale' || badgeLabel === 'Featured') {
+      badgeClass = 'product-card__badge--gold';
+    }
+
     const encodedId = encodeURIComponent(product.id);
+    const safeIdAttr = escapeHTML(product.id);
+    const safeName = escapeHTML(product.name);
+    const safeCat = escapeHTML(product.category);
+    const safePrimaryColor = escapeHTML(product.primaryColor);
+    const safePrimaryImg = escapeHTML(product.images.primary);
+    const safeSecondaryImg = escapeHTML(product.images.secondary || product.images.primary);
 
     const comparePriceHtml = product.compareAtPrice
       ? '<span style="font-size:0.76rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.35rem; font-weight:300;">' +
@@ -220,46 +347,59 @@
         '</span>'
       : '';
 
-    const swatchesHtml = product.colors
+    const swatchesHtml = (product.colors || [])
       .map(function (c, sIdx) {
+        const cName = escapeHTML(c.name);
+        const cHex = escapeHTML(c.hex);
         return (
           '<button type="button" class="swatch-dot ' +
           (sIdx === 0 ? 'is-selected' : '') +
           '" style="background-color: ' +
-          c.hex +
+          cHex +
           ';" title="' +
-          c.name +
+          cName +
           '" aria-label="Select ' +
-          c.name +
+          cName +
           '" data-card-swatch="' +
-          c.name +
+          cName +
           '"></button>'
         );
       })
       .join('');
 
+    const quickAddButtonHtml = isSoldOut
+      ? '<button type="button" class="product-card__quick-add is-disabled" disabled aria-disabled="true">' +
+        '<span>Sold Out</span>' +
+        '</button>'
+      : '<button type="button" class="product-card__quick-add" data-quick-add="' +
+        safeIdAttr +
+        '">' +
+        '<span>+ Quick Add</span>' +
+        '</button>';
+
     return (
       '<article class="product-card reveal ' +
       delayClass +
+      (isSoldOut ? ' is-sold-out' : '') +
       '" data-product-card="' +
-      product.id +
+      safeIdAttr +
       '" data-selected-color="' +
-      product.primaryColor +
+      safePrimaryColor +
       '">' +
       '<div class="product-card__media">' +
-      (product.badge
+      (badgeLabel
         ? '<span class="product-card__badge ' +
           badgeClass +
           '">' +
-          product.badge +
+          escapeHTML(badgeLabel) +
           '</span>'
         : '') +
       '<button type="button" class="product-card__wishlist ' +
       (wished ? 'is-active' : '') +
       '" data-wishlist-btn="' +
-      product.id +
+      safeIdAttr +
       '" aria-label="Save ' +
-      product.name +
+      safeName +
       ' to wishlist" aria-pressed="' +
       wished +
       '">' +
@@ -270,38 +410,34 @@
       '<a href="product.html?id=' +
       encodedId +
       '" aria-label="View ' +
-      product.name +
+      safeName +
       '">' +
       '<img src="' +
-      product.images.primary +
+      safePrimaryImg +
       '" alt="' +
-      product.name +
+      safeName +
       ' in ' +
-      product.primaryColor +
+      safePrimaryColor +
       '" class="product-card__img product-card__img--primary" loading="lazy">' +
       '<img src="' +
-      product.images.secondary +
+      safeSecondaryImg +
       '" alt="' +
-      product.name +
+      safeName +
       ' alternate studio view" class="product-card__img product-card__img--secondary" loading="lazy">' +
       '</a>' +
-      '<button type="button" class="product-card__quick-add" data-quick-add="' +
-      product.id +
-      '">' +
-      '<span>+ Quick Add</span>' +
-      '</button>' +
+      quickAddButtonHtml +
       '</div>' +
       '<div class="product-card__body">' +
       '<div class="product-card__category">' +
-      product.category +
+      safeCat +
       ' &bull; <span data-card-color-label>' +
-      product.primaryColor +
+      safePrimaryColor +
       '</span></div>' +
       '<h3 class="product-card__title">' +
       '<a href="product.html?id=' +
       encodedId +
       '">' +
-      product.name +
+      safeName +
       '</a>' +
       '</h3>' +
       '<div class="product-card__price-row">' +
@@ -331,6 +467,7 @@
     const quickAddBtn = e.target.closest('[data-quick-add]');
     if (quickAddBtn) {
       e.preventDefault();
+      if (quickAddBtn.disabled || quickAddBtn.classList.contains('is-disabled')) return;
       const id = quickAddBtn.getAttribute('data-quick-add');
       const card = quickAddBtn.closest('[data-product-card]');
       const color = card ? card.getAttribute('data-selected-color') : null;
@@ -359,156 +496,196 @@
      3. HOME PAGE CONTROLLER
      ========================================================================== */
   function initHomePage() {
-    // 1. Featured Categories
     const catGrid = document.getElementById('homeCategoriesGrid');
-    if (catGrid) {
-      catGrid.innerHTML = categories
-        .map(function (cat, idx) {
-          return (
-            '<a href="shop.html?category=' +
-            encodeURIComponent(cat.id) +
-            '" class="category-card reveal delay-' +
-            ((idx % 5) + 1) +
-            '">' +
-            '<img src="' +
-            cat.image +
-            '" alt="' +
-            cat.name +
-            ' Collection" class="category-card__img" loading="lazy">' +
-            '<div class="category-card__overlay">' +
-            '<h3 class="category-card__title">' +
-            cat.name +
-            '</h3>' +
-            '<span class="category-card__count">' +
-            cat.subtitle +
-            '</span>' +
-            '</div>' +
-            '</a>'
-          );
-        })
-        .join('');
-    }
-
-    // 2. New Arrivals Grid (4 items)
     const newArrivalsGrid = document.getElementById('newArrivalsGrid');
-    if (newArrivalsGrid) {
-      const newItems = products
-        .filter(function (p) {
-          return p.isNew;
-        })
-        .slice(0, 4);
-      newArrivalsGrid.innerHTML = newItems
-        .map(function (p, idx) {
-          return renderProductCard(p, idx);
-        })
-        .join('');
-    }
-
-    // 3. "Shop by Color" ("Carry Your Color") Interactive Swatch Explorer
     const swatchesBar = document.getElementById('hueSwatchesBar');
     const huePreviewGrid = document.getElementById('huePreviewGrid');
     const hueDescription = document.getElementById('hueActiveDescription');
     const hueShopLink = document.getElementById('hueShopFilterLink');
+    const bestsellersGrid = document.getElementById('bestsellersGrid');
 
-    if (swatchesBar && huePreviewGrid) {
-      const renderHueSelection = function (selectedColorKey) {
-        const hueObj =
-          colors.find(function (c) {
-            return c.key === selectedColorKey;
-          }) || colors[0];
+    if (!catGrid && !newArrivalsGrid && !bestsellersGrid) return;
 
-        swatchesBar.querySelectorAll('[data-hue-select]').forEach(function (el) {
-          el.classList.toggle(
-            'is-active',
-            el.getAttribute('data-hue-select') === hueObj.key
-          );
-        });
+    let currentHueKey = 'Blush Pink';
 
-        if (hueDescription) {
-          hueDescription.innerHTML =
-            '<strong>' + hueObj.name + '</strong> &mdash; ' + hueObj.poetic;
-        }
-        if (hueShopLink) {
-          hueShopLink.href = 'shop.html?color=' + encodeURIComponent(hueObj.key);
-          hueShopLink.textContent = 'Shop All ' + hueObj.name + ' Pieces';
-        }
+    function renderHomeSections() {
+      const products = getProducts();
 
-        const matchingProducts = products
-          .filter(function (p) {
-            return p.colors.some(function (c) {
-              return c.name === hueObj.key;
-            });
+      // 1. Featured Categories
+      if (catGrid) {
+        catGrid.innerHTML = categories
+          .map(function (cat, idx) {
+            return (
+              '<a href="shop.html?category=' +
+              encodeURIComponent(cat.id) +
+              '" class="category-card reveal delay-' +
+              ((idx % 5) + 1) +
+              '">' +
+              '<img src="' +
+              escapeHTML(cat.image) +
+              '" alt="' +
+              escapeHTML(cat.name) +
+              ' Collection" class="category-card__img" loading="lazy">' +
+              '<div class="category-card__overlay">' +
+              '<h3 class="category-card__title">' +
+              escapeHTML(cat.name) +
+              '</h3>' +
+              '<span class="category-card__count">' +
+              escapeHTML(cat.subtitle) +
+              '</span>' +
+              '</div>' +
+              '</a>'
+            );
           })
-          .slice(0, 4);
+          .join('');
+      }
 
-        huePreviewGrid.innerHTML = matchingProducts
+      // 2. New Arrivals Grid (uses `is_new` flag)
+      if (newArrivalsGrid) {
+        let newItems = products.filter(function (p) {
+          return Boolean(p.isNew || p.is_new);
+        });
+        if (newItems.length === 0) {
+          newItems = products.slice(0, 4);
+        }
+        newArrivalsGrid.innerHTML = newItems
+          .slice(0, 4)
           .map(function (p, idx) {
             return renderProductCard(p, idx);
           })
           .join('');
+      }
 
-        if (window.observeReveals) window.observeReveals();
-      };
+      // 3. Shop by Color ("Carry Your Color" Swatch Explorer — prioritizes `is_featured`)
+      if (swatchesBar && huePreviewGrid) {
+        const renderHueSelection = function (selectedColorKey) {
+          currentHueKey = selectedColorKey;
+          const hueObj =
+            colors.find(function (c) {
+              return c.key === selectedColorKey;
+            }) || colors[0];
 
-      swatchesBar.innerHTML = colors
-        .map(function (c, i) {
-          return (
-            '<div class="hue-swatch-item ' +
-            (i === 0 ? 'is-active' : '') +
-            '" data-hue-select="' +
-            c.key +
-            '" role="button" tabindex="0" aria-label="Explore ' +
-            c.name +
-            ' bags">' +
-            '<span class="hue-swatch-circle" style="background-color: ' +
-            c.hex +
-            '; border-color: ' +
-            c.borderHex +
-            ';"></span>' +
-            '<span class="hue-swatch-label">' +
-            c.name +
-            '</span>' +
-            '</div>'
-          );
-        })
-        .join('');
+          swatchesBar.querySelectorAll('[data-hue-select]').forEach(function (el) {
+            el.classList.toggle(
+              'is-active',
+              el.getAttribute('data-hue-select') === hueObj.key
+            );
+          });
 
-      swatchesBar.addEventListener('click', function (e) {
-        const item = e.target.closest('[data-hue-select]');
-        if (item) {
-          renderHueSelection(item.getAttribute('data-hue-select'));
-        }
-      });
-
-      swatchesBar.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-          const item = e.target.closest('[data-hue-select]');
-          if (item) {
-            e.preventDefault();
-            renderHueSelection(item.getAttribute('data-hue-select'));
+          if (hueDescription) {
+            hueDescription.innerHTML =
+              '<strong>' +
+              escapeHTML(hueObj.name) +
+              '</strong> &mdash; ' +
+              escapeHTML(hueObj.poetic);
           }
+          if (hueShopLink) {
+            hueShopLink.href = 'shop.html?color=' + encodeURIComponent(hueObj.key);
+            hueShopLink.textContent = 'Shop All ' + hueObj.name + ' Pieces';
+          }
+
+          const matchingProducts = products
+            .filter(function (p) {
+              return (p.colors || []).some(function (c) {
+                return c.name.toLowerCase() === hueObj.key.toLowerCase();
+              });
+            })
+            .sort(function (a, b) {
+              return Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
+            })
+            .slice(0, 4);
+
+          huePreviewGrid.innerHTML = matchingProducts
+            .map(function (p, idx) {
+              return renderProductCard(p, idx);
+            })
+            .join('');
+
+          if (window.observeReveals) window.observeReveals();
+        };
+
+        if (!swatchesBar.hasAttribute('data-bound')) {
+          swatchesBar.setAttribute('data-bound', 'true');
+          swatchesBar.innerHTML = colors
+            .map(function (c, i) {
+              return (
+                '<div class="hue-swatch-item ' +
+                (i === 0 ? 'is-active' : '') +
+                '" data-hue-select="' +
+                escapeHTML(c.key) +
+                '" role="button" tabindex="0" aria-label="Explore ' +
+                escapeHTML(c.name) +
+                ' bags">' +
+                '<span class="hue-swatch-circle" style="background-color: ' +
+                escapeHTML(c.hex) +
+                '; border-color: ' +
+                escapeHTML(c.borderHex) +
+                ';"></span>' +
+                '<span class="hue-swatch-label">' +
+                escapeHTML(c.name) +
+                '</span>' +
+                '</div>'
+              );
+            })
+            .join('');
+
+          swatchesBar.addEventListener('click', function (e) {
+            const item = e.target.closest('[data-hue-select]');
+            if (item) {
+              renderHueSelection(item.getAttribute('data-hue-select'));
+            }
+          });
+
+          swatchesBar.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+              const item = e.target.closest('[data-hue-select]');
+              if (item) {
+                e.preventDefault();
+                renderHueSelection(item.getAttribute('data-hue-select'));
+              }
+            }
+          });
         }
-      });
 
-      renderHueSelection('Blush Pink');
+        renderHueSelection(currentHueKey);
+      }
+
+      // 4. Bestsellers Grid (uses `is_bestseller` and `is_featured` flags)
+      if (bestsellersGrid) {
+        let bestItems = products.filter(function (p) {
+          return Boolean(p.isBestseller || p.is_bestseller);
+        });
+        if (bestItems.length === 0) {
+          bestItems = products.filter(function (p) {
+            return Boolean(p.isFeatured || p.is_featured);
+          });
+        }
+        if (bestItems.length === 0) {
+          bestItems = products.slice(0, 4);
+        }
+        bestsellersGrid.innerHTML = bestItems
+          .slice(0, 4)
+          .map(function (p, idx) {
+            return renderProductCard(p, idx);
+          })
+          .join('');
+      }
+
+      if (window.observeReveals) window.observeReveals();
     }
 
-    // 4. Bestsellers Grid (4 items)
-    const bestsellersGrid = document.getElementById('bestsellersGrid');
-    if (bestsellersGrid) {
-      const bestItems = products
-        .filter(function (p) {
-          return p.isBestseller;
-        })
-        .slice(0, 4);
-      bestsellersGrid.innerHTML = bestItems
-        .map(function (p, idx) {
-          return renderProductCard(p, idx);
-        })
-        .join('');
+    // Show skeletons briefly if products are empty, then render immediately
+    if (getProducts().length === 0) {
+      if (newArrivalsGrid) newArrivalsGrid.innerHTML = renderSkeletonGrid(4);
+      if (huePreviewGrid) huePreviewGrid.innerHTML = renderSkeletonGrid(4);
+      if (bestsellersGrid) bestsellersGrid.innerHTML = renderSkeletonGrid(4);
+    } else {
+      renderHomeSections();
     }
 
-    // 5. Newsletter Form
+    window.addEventListener('handlehue:data-loaded', renderHomeSections);
+
+    // Newsletter Form
     const newsletterForm = document.getElementById('newsletterForm');
     if (newsletterForm) {
       newsletterForm.addEventListener('submit', function (e) {
@@ -522,8 +699,6 @@
         }
       });
     }
-
-    if (window.observeReveals) window.observeReveals();
   }
 
   /* ==========================================================================
@@ -533,12 +708,20 @@
     const shopGrid = document.getElementById('shopProductsGrid');
     if (!shopGrid) return;
 
-    const MAX_CATALOG_PRICE = 18000;
+    function computeMaxCatalogPrice() {
+      const prods = getProducts();
+      const maxFound = prods.reduce(function (m, p) {
+        return Math.max(m, Number(p.price) || 0);
+      }, 18000);
+      return Math.max(18000, Math.ceil(maxFound / 1000) * 1000);
+    }
+
+    let maxCatalogPrice = computeMaxCatalogPrice();
     const params = new URLSearchParams(window.location.search);
     const state = {
       category: params.get('category') || 'All',
       color: params.get('color') || 'All',
-      maxPrice: parseInt(params.get('maxPrice'), 10) || MAX_CATALOG_PRICE,
+      maxPrice: parseInt(params.get('maxPrice'), 10) || maxCatalogPrice,
       search: params.get('search') || '',
       sort: params.get('sort') || 'featured'
     };
@@ -555,7 +738,6 @@
     const activeFiltersBar = document.getElementById('activeFiltersBar');
     const clearAllBtn = document.getElementById('clearAllFiltersBtn');
 
-    // Mobile Collapsible Filter Panel Toggle
     if (mobileFilterToggleBtn && shopSidebar) {
       mobileFilterToggleBtn.addEventListener('click', function () {
         const isOpen = shopSidebar.classList.toggle('is-open');
@@ -568,12 +750,17 @@
     }
 
     function renderFilterControls() {
+      const products = getProducts();
       if (catContainer) {
-        const allCats = ['All'].concat(
-          categories.map(function (c) {
-            return c.id;
-          })
-        );
+        const knownCatIds = categories.map(function (c) {
+          return c.id;
+        });
+        products.forEach(function (p) {
+          if (p.category && !knownCatIds.includes(p.category)) {
+            knownCatIds.push(p.category);
+          }
+        });
+        const allCats = ['All'].concat(knownCatIds);
         catContainer.innerHTML = allCats
           .map(function (catName) {
             const count =
@@ -587,10 +774,10 @@
               '<button type="button" class="filter-btn ' +
               (state.category === catName ? 'is-active' : '') +
               '" data-filter-cat="' +
-              catName +
+              escapeHTML(catName) +
               '">' +
               '<span>' +
-              (catName === 'All' ? 'All Silhouettes' : catName) +
+              escapeHTML(catName === 'All' ? 'All Silhouettes' : catName) +
               '</span>' +
               '<span style="font-size:0.75rem; opacity:0.7;">(' +
               count +
@@ -616,15 +803,15 @@
                 '<button type="button" class="filter-swatch-btn ' +
                 (state.color === c.key ? 'is-active' : '') +
                 '" data-filter-color="' +
-                c.key +
+                escapeHTML(c.key) +
                 '" title="' +
-                c.name +
+                escapeHTML(c.name) +
                 '">' +
                 '<span class="filter-swatch-circle" style="background-color: ' +
-                c.hex +
+                escapeHTML(c.hex) +
                 ';"></span>' +
                 '<span>' +
-                c.name.split(' ')[0] +
+                escapeHTML(c.name.split(' ')[0]) +
                 '</span>' +
                 '</button>'
               );
@@ -633,7 +820,8 @@
       }
 
       if (priceSlider) {
-        priceSlider.value = state.maxPrice;
+        priceSlider.max = String(maxCatalogPrice);
+        priceSlider.value = String(state.maxPrice);
       }
       if (priceLabel) {
         priceLabel.textContent = formatPKR(state.maxPrice);
@@ -647,13 +835,14 @@
     }
 
     function applyFiltersAndRender() {
+      const products = getProducts();
       const filtered = products.filter(function (prod) {
         if (state.category !== 'All' && prod.category !== state.category) {
           return false;
         }
         if (
           state.color !== 'All' &&
-          !prod.colors.some(function (c) {
+          !(prod.colors || []).some(function (c) {
             return c.name.toLowerCase() === state.color.toLowerCase();
           })
         ) {
@@ -666,7 +855,7 @@
           const q = state.search.trim().toLowerCase();
           const match =
             prod.name.toLowerCase().includes(q) ||
-            prod.subtitle.toLowerCase().includes(q) ||
+            (prod.subtitle && prod.subtitle.toLowerCase().includes(q)) ||
             prod.category.toLowerCase().includes(q) ||
             prod.primaryColor.toLowerCase().includes(q);
           if (!match) return false;
@@ -674,8 +863,14 @@
         return true;
       });
 
-      // Sorting
-      if (state.sort === 'price-asc') {
+      // Sorting (Featured prioritizes `is_featured` and `sort_order`)
+      if (state.sort === 'featured') {
+        filtered.sort(function (a, b) {
+          const featDiff = Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured));
+          if (featDiff !== 0) return featDiff;
+          return (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0);
+        });
+      } else if (state.sort === 'price-asc') {
         filtered.sort(function (a, b) {
           return a.price - b.price;
         });
@@ -685,7 +880,7 @@
         });
       } else if (state.sort === 'newest') {
         filtered.sort(function (a, b) {
-          return Number(b.isNew) - Number(a.isNew);
+          return Number(Boolean(b.isNew)) - Number(Boolean(a.isNew));
         });
       } else if (state.sort === 'name-asc') {
         filtered.sort(function (a, b) {
@@ -698,24 +893,23 @@
           'Showing ' + filtered.length + ' of ' + products.length + ' handcrafted pieces';
       }
 
-      // Render active filter chips
       if (activeFiltersBar) {
         const chips = [];
         if (state.category !== 'All') {
           chips.push(
             '<button type="button" class="filter-chip" data-clear-filter="category">Category: ' +
-              state.category +
+              escapeHTML(state.category) +
               ' &times;</button>'
           );
         }
         if (state.color !== 'All') {
           chips.push(
             '<button type="button" class="filter-chip" data-clear-filter="color">Hue: ' +
-              state.color +
+              escapeHTML(state.color) +
               ' &times;</button>'
           );
         }
-        if (state.maxPrice < MAX_CATALOG_PRICE) {
+        if (state.maxPrice < maxCatalogPrice) {
           chips.push(
             '<button type="button" class="filter-chip" data-clear-filter="price">Up to ' +
               formatPKR(state.maxPrice) +
@@ -725,7 +919,7 @@
         if (state.search.trim()) {
           chips.push(
             '<button type="button" class="filter-chip" data-clear-filter="search">Search: "' +
-              state.search +
+              escapeHTML(state.search) +
               '" &times;</button>'
           );
         }
@@ -756,7 +950,7 @@
     function resetAllFilters() {
       state.category = 'All';
       state.color = 'All';
-      state.maxPrice = MAX_CATALOG_PRICE;
+      state.maxPrice = maxCatalogPrice;
       state.search = '';
       state.sort = 'featured';
       renderFilterControls();
@@ -814,7 +1008,7 @@
         const type = chip.getAttribute('data-clear-filter');
         if (type === 'category') state.category = 'All';
         if (type === 'color') state.color = 'All';
-        if (type === 'price') state.maxPrice = MAX_CATALOG_PRICE;
+        if (type === 'price') state.maxPrice = maxCatalogPrice;
         if (type === 'search') state.search = '';
         renderFilterControls();
         applyFiltersAndRender();
@@ -827,380 +1021,440 @@
 
     renderFilterControls();
     applyFiltersAndRender();
+
+    window.addEventListener('handlehue:data-loaded', function () {
+      const prevMax = maxCatalogPrice;
+      maxCatalogPrice = computeMaxCatalogPrice();
+      if (state.maxPrice === prevMax) {
+        state.maxPrice = maxCatalogPrice;
+      }
+      renderFilterControls();
+      applyFiltersAndRender();
+    });
   }
 
   /* ==========================================================================
-     5. PRODUCT DETAIL PAGE CONTROLLER (Gallery Zoom, Buy on WhatsApp, Related)
+     5. PRODUCT DETAIL PAGE CONTROLLER (Gallery, Sold Out State, WhatsApp)
      ========================================================================== */
   function initProductDetailPage() {
     const pdpRoot = document.getElementById('pdpDetailContainer');
     if (!pdpRoot) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const productId = params.get('id') || 'aurelia-tote';
-    const product =
-      products.find(function (p) {
-        return p.id === productId;
-      }) || products[0];
+    function renderPDP() {
+      const products = getProducts();
+      const settings = getSettings();
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get('id') || 'aurelia-tote';
+      const product =
+        (window.HandleHueData && window.HandleHueData.findProduct(requestedId)) ||
+        products.find(function (p) {
+          return p.id === requestedId || p.slug === requestedId || p.uuid === requestedId;
+        }) ||
+        products[0];
 
-    document.title = product.name + ' | Handle & Hue — Carry your color';
+      if (!product) return;
 
-    let selectedColor = product.primaryColor;
-    let quantity = 1;
+      document.title = product.name + ' | Handle & Hue — Carry your color';
 
-    // Update Breadcrumbs
-    const bcCategory = document.getElementById('pdpBreadcrumbCategory');
-    const bcName = document.getElementById('pdpBreadcrumbName');
-    if (bcCategory) {
-      bcCategory.textContent = product.category;
-      bcCategory.href = 'shop.html?category=' + encodeURIComponent(product.category);
-    }
-    if (bcName) bcName.textContent = product.name;
+      const isSoldOut = product.inStock === false || product.in_stock === false;
+      let selectedColor = product.primaryColor;
+      let quantity = 1;
 
-    const galleryViews = [
-      { key: 'primary', label: 'Studio Front View', src: product.images.primary },
-      { key: 'secondary', label: 'Three-Quarter Plinth View', src: product.images.secondary },
-      { key: 'detail', label: 'Hardware & Leather Detail', src: product.images.detail },
-      { key: 'lifestyle', label: 'Atelier Edition View', src: product.images.lifestyle }
-    ];
+      const bcCategory = document.getElementById('pdpBreadcrumbCategory');
+      const bcName = document.getElementById('pdpBreadcrumbName');
+      if (bcCategory) {
+        bcCategory.textContent = product.category;
+        bcCategory.href = 'shop.html?category=' + encodeURIComponent(product.category);
+      }
+      if (bcName) bcName.textContent = product.name;
 
-    const wished = store.isInWishlist(product.id);
-    const compareHtml = product.compareAtPrice
-      ? '<span style="font-size:1.05rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.6rem; font-weight:300;">' +
-        formatPKR(product.compareAtPrice) +
-        '</span>'
-      : '';
+      const rawList =
+        Array.isArray(product.imageList) && product.imageList.length > 0
+          ? product.imageList
+          : [
+              product.images.primary,
+              product.images.secondary,
+              product.images.detail,
+              product.images.lifestyle
+            ].filter(Boolean);
 
-    const thumbsHtml = galleryViews
-      .map(function (v, idx) {
-        return (
-          '<button type="button" class="pdp-thumb-btn ' +
-          (idx === 0 ? 'is-active' : '') +
-          '" data-thumb-src="' +
-          v.src +
-          '" aria-label="' +
-          v.label +
-          '">' +
-          '<img src="' +
-          v.src +
-          '" alt="' +
-          v.label +
-          '">' +
+      const viewLabels = [
+        'Studio Front View',
+        'Three-Quarter Plinth View',
+        'Hardware & Leather Detail',
+        'Atelier Edition View'
+      ];
+
+      const galleryViews = rawList.map(function (src, idx) {
+        return {
+          src: src,
+          label: viewLabels[idx] || product.name + ' View ' + (idx + 1)
+        };
+      });
+
+      const wished = store.isInWishlist(product.id);
+      const compareHtml = product.compareAtPrice
+        ? '<span style="font-size:1.05rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.6rem; font-weight:300;">' +
+          formatPKR(product.compareAtPrice) +
+          '</span>'
+        : '';
+
+      const soldOutPillHtml = isSoldOut
+        ? '<span class="product-card__badge product-card__badge--soldout" style="position:static; margin-left:0.65rem; vertical-align:middle;">Sold out</span>'
+        : '';
+
+      const thumbsHtml = galleryViews
+        .map(function (v, idx) {
+          return (
+            '<button type="button" class="pdp-thumb-btn ' +
+            (idx === 0 ? 'is-active' : '') +
+            '" data-thumb-src="' +
+            escapeHTML(v.src) +
+            '" aria-label="' +
+            escapeHTML(v.label) +
+            '">' +
+            '<img src="' +
+            escapeHTML(v.src) +
+            '" alt="' +
+            escapeHTML(v.label) +
+            '">' +
+            '</button>'
+          );
+        })
+        .join('');
+
+      const swatchesHtml = (product.colors || [])
+        .map(function (c, i) {
+          return (
+            '<button type="button" class="pdp-swatch-btn ' +
+            (i === 0 ? 'is-active' : '') +
+            '" style="background-color:' +
+            escapeHTML(c.hex) +
+            ';" data-pdp-color="' +
+            escapeHTML(c.name) +
+            '" title="' +
+            escapeHTML(c.name) +
+            '" aria-label="Select ' +
+            escapeHTML(c.name) +
+            '"></button>'
+          );
+        })
+        .join('');
+
+      const addCartBtnHtml = isSoldOut
+        ? '<button type="button" class="btn btn-primary is-disabled" id="pdpAddToCartBtn" style="flex:1;" disabled aria-disabled="true">' +
+          'Sold Out' +
           '</button>'
-        );
-      })
-      .join('');
+        : '<button type="button" class="btn btn-primary" id="pdpAddToCartBtn" style="flex:1;">' +
+          'Add to Shopping Bag &mdash; ' +
+          formatPKR(product.price) +
+          '</button>';
 
-    const swatchesHtml = product.colors
-      .map(function (c, i) {
-        return (
-          '<button type="button" class="pdp-swatch-btn ' +
-          (i === 0 ? 'is-active' : '') +
-          '" style="background-color:' +
-          c.hex +
-          ';" data-pdp-color="' +
-          c.name +
-          '" title="' +
-          c.name +
-          '" aria-label="Select ' +
-          c.name +
-          '"></button>'
-        );
-      })
-      .join('');
+      const buyWaBtnHtml = isSoldOut
+        ? '<button type="button" class="btn btn-gold is-disabled" id="pdpBuyWhatsAppBtn" disabled aria-disabled="true">' +
+          '<span>Sold Out &mdash; Unavailable on WhatsApp</span>' +
+          '</button>'
+        : '<button type="button" class="btn btn-gold" id="pdpBuyWhatsAppBtn">' +
+          '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
+          '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' +
+          '</svg>' +
+          '<span>Buy on WhatsApp</span>' +
+          '</button>';
 
-    pdpRoot.innerHTML =
-      '<div class="pdp-gallery">' +
-      '<div class="pdp-thumbs" id="pdpThumbs">' +
-      thumbsHtml +
-      '</div>' +
-      '<div class="pdp-main-stage" id="pdpZoomStage" title="Move cursor to inspect leather grain and hardware">' +
-      '<img src="' +
-      product.images.primary +
-      '" alt="' +
-      product.name +
-      '" id="pdpMainImage">' +
-      '<span class="pdp-zoom-hint">Hover to Magnify</span>' +
-      '</div>' +
-      '</div>' +
-      '<div class="pdp-info">' +
-      '<span class="eyebrow">' +
-      product.category +
-      ' &bull; SKU: ' +
-      product.sku +
-      '</span>' +
-      '<h1 class="pdp-info__title">' +
-      product.name +
-      '</h1>' +
-      '<p style="font-style:italic; font-family:var(--font-heading); font-size:1.2rem; color:var(--color-charcoal-soft); margin-bottom:1rem;">' +
-      product.subtitle +
-      '</p>' +
-      '<div class="pdp-info__price-row">' +
-      '<span class="pdp-info__price">' +
-      formatPKR(product.price) +
-      compareHtml +
-      '</span>' +
-      '<span class="pdp-info__rating">&#9733;&#9733;&#9733;&#9733;&#9733; ' +
-      product.rating +
-      ' (' +
-      product.reviewsCount +
-      ' Atelier Reviews)</span>' +
-      '</div>' +
-      '<p class="pdp-info__desc">' +
-      product.description +
-      '</p>' +
-      '<div class="pdp-option-block">' +
-      '<label class="pdp-option-label">Selected Hue: <span id="pdpSelectedColorName">' +
-      selectedColor +
-      '</span></label>' +
-      '<div class="pdp-swatches" id="pdpSwatches">' +
-      swatchesHtml +
-      '</div>' +
-      '</div>' +
-      '<div class="pdp-dimensions-card">' +
-      '<div class="pdp-dim-item">' +
-      '<span>Dimensions</span>' +
-      '<strong>' +
-      product.dimensions.split('(')[0].trim() +
-      '</strong>' +
-      '</div>' +
-      '<div class="pdp-dim-item">' +
-      '<span>Strap Drop</span>' +
-      '<strong>' +
-      product.strapDrop.split('|')[0].trim() +
-      '</strong>' +
-      '</div>' +
-      '<div class="pdp-dim-item">' +
-      '<span>Weight</span>' +
-      '<strong>' +
-      product.weight +
-      '</strong>' +
-      '</div>' +
-      '</div>' +
-      '<div class="pdp-actions-row">' +
-      '<div class="qty-selector" aria-label="Quantity">' +
-      '<button type="button" id="pdpQtyMinus" aria-label="Decrease quantity">&minus;</button>' +
-      '<input type="text" id="pdpQtyInput" value="1" readonly aria-label="Quantity">' +
-      '<button type="button" id="pdpQtyPlus" aria-label="Increase quantity">+</button>' +
-      '</div>' +
-      '<button type="button" class="btn btn-primary" id="pdpAddToCartBtn" style="flex:1;">' +
-      'Add to Shopping Bag &mdash; ' +
-      formatPKR(product.price) +
-      '</button>' +
-      '<button type="button" class="btn btn-outline ' +
-      (wished ? 'is-active' : '') +
-      '" id="pdpWishlistBtn" data-wishlist-btn="' +
-      product.id +
-      '" aria-label="Add to Wishlist" style="padding:0.85rem 1.15rem;">' +
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="' +
-      (wished ? 'currentColor' : 'none') +
-      '" stroke="currentColor" stroke-width="1.7">' +
-      '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
-      '</svg>' +
-      '</button>' +
-      '</div>' +
-      '<div class="pdp-whatsapp-row">' +
-      '<button type="button" class="btn btn-gold" id="pdpBuyWhatsAppBtn">' +
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
-      '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' +
-      '</svg>' +
-      '<span>Buy on WhatsApp</span>' +
-      '</button>' +
-      '</div>' +
-      '<div class="pdp-accordions">' +
-      '<div class="accordion-item is-open">' +
-      '<button type="button" class="accordion-trigger">' +
-      '<span>Materials &amp; Craftsmanship</span>' +
-      '<span>&plus;</span>' +
-      '</button>' +
-      '<div class="accordion-content">' +
-      '<p>' +
-      product.materials +
-      '</p>' +
-      '<p style="margin-top:0.5rem;"><strong>Interior Capacity:</strong> ' +
-      product.capacity +
-      '.</p>' +
-      '</div>' +
-      '</div>' +
-      '<div class="accordion-item">' +
-      '<button type="button" class="accordion-trigger">' +
-      '<span>Size, Strap &amp; Fit Specifications</span>' +
-      '<span>&plus;</span>' +
-      '</button>' +
-      '<div class="accordion-content">' +
-      '<p>Full Measurements: ' +
-      product.dimensions +
-      '<br>Strap Configuration: ' +
-      product.strapDrop +
-      '<br>Unladen Weight: ' +
-      product.weight +
-      '</p>' +
-      '</div>' +
-      '</div>' +
-      '<div class="accordion-item">' +
-      '<button type="button" class="accordion-trigger">' +
-      '<span>Nationwide Delivery Across Pakistan &amp; Easy Exchange</span>' +
-      '<span>&plus;</span>' +
-      '</button>' +
-      '<div class="accordion-content">' +
-      '<p>Nationwide delivery across Pakistan in 3 to 5 working days. Enjoy free delivery on orders of Rs. 10,000 or above (flat Rs. 250 nationwide shipping fee below Rs. 10,000). Cash on Delivery, Bank Transfer, JazzCash, and Easypaisa are available, backed by our hassle-free 14-day easy exchange policy.</p>' +
-      '</div>' +
-      '</div>' +
-      '</div>' +
-      '</div>';
+      pdpRoot.innerHTML =
+        '<div class="pdp-gallery">' +
+        '<div class="pdp-thumbs" id="pdpThumbs">' +
+        thumbsHtml +
+        '</div>' +
+        '<div class="pdp-main-stage" id="pdpZoomStage" title="Move cursor to inspect leather grain and hardware">' +
+        '<img src="' +
+        escapeHTML(product.images.primary) +
+        '" alt="' +
+        escapeHTML(product.name) +
+        '" id="pdpMainImage">' +
+        '<span class="pdp-zoom-hint">Hover to Magnify</span>' +
+        '</div>' +
+        '</div>' +
+        '<div class="pdp-info">' +
+        '<span class="eyebrow">' +
+        escapeHTML(product.category) +
+        ' &bull; SKU: ' +
+        escapeHTML(product.sku) +
+        soldOutPillHtml +
+        '</span>' +
+        '<h1 class="pdp-info__title">' +
+        escapeHTML(product.name) +
+        '</h1>' +
+        '<p style="font-style:italic; font-family:var(--font-heading); font-size:1.2rem; color:var(--color-charcoal-soft); margin-bottom:1rem;">' +
+        escapeHTML(product.subtitle) +
+        '</p>' +
+        '<div class="pdp-info__price-row">' +
+        '<span class="pdp-info__price">' +
+        formatPKR(product.price) +
+        compareHtml +
+        '</span>' +
+        '<span class="pdp-info__rating">&#9733;&#9733;&#9733;&#9733;&#9733; ' +
+        escapeHTML(product.rating) +
+        ' (' +
+        escapeHTML(product.reviewsCount) +
+        ' Atelier Reviews)</span>' +
+        '</div>' +
+        '<p class="pdp-info__desc">' +
+        escapeHTML(product.description) +
+        '</p>' +
+        '<div class="pdp-option-block">' +
+        '<label class="pdp-option-label">Selected Hue: <span id="pdpSelectedColorName">' +
+        escapeHTML(selectedColor) +
+        '</span></label>' +
+        '<div class="pdp-swatches" id="pdpSwatches">' +
+        swatchesHtml +
+        '</div>' +
+        '</div>' +
+        '<div class="pdp-dimensions-card">' +
+        '<div class="pdp-dim-item">' +
+        '<span>Dimensions</span>' +
+        '<strong>' +
+        escapeHTML((product.dimensions || '').split('(')[0].trim()) +
+        '</strong>' +
+        '</div>' +
+        '<div class="pdp-dim-item">' +
+        '<span>Strap Drop</span>' +
+        '<strong>' +
+        escapeHTML((product.strapDrop || '').split('|')[0].trim()) +
+        '</strong>' +
+        '</div>' +
+        '<div class="pdp-dim-item">' +
+        '<span>Availability</span>' +
+        '<strong>' +
+        (isSoldOut ? 'Sold Out' : 'In Stock') +
+        '</strong>' +
+        '</div>' +
+        '</div>' +
+        '<div class="pdp-actions-row">' +
+        '<div class="qty-selector" aria-label="Quantity">' +
+        '<button type="button" id="pdpQtyMinus" aria-label="Decrease quantity" ' +
+        (isSoldOut ? 'disabled' : '') +
+        '>&minus;</button>' +
+        '<input type="text" id="pdpQtyInput" value="1" readonly aria-label="Quantity">' +
+        '<button type="button" id="pdpQtyPlus" aria-label="Increase quantity" ' +
+        (isSoldOut ? 'disabled' : '') +
+        '>+</button>' +
+        '</div>' +
+        addCartBtnHtml +
+        '<button type="button" class="btn btn-outline ' +
+        (wished ? 'is-active' : '') +
+        '" id="pdpWishlistBtn" data-wishlist-btn="' +
+        escapeHTML(product.id) +
+        '" aria-label="Add to Wishlist" style="padding:0.85rem 1.15rem;">' +
+        '<svg viewBox="0 0 24 24" width="18" height="18" fill="' +
+        (wished ? 'currentColor' : 'none') +
+        '" stroke="currentColor" stroke-width="1.7">' +
+        '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+        '</svg>' +
+        '</button>' +
+        '</div>' +
+        '<div class="pdp-whatsapp-row">' +
+        buyWaBtnHtml +
+        '</div>' +
+        '<div class="pdp-accordions">' +
+        '<div class="accordion-item is-open">' +
+        '<button type="button" class="accordion-trigger">' +
+        '<span>Materials &amp; Craftsmanship</span>' +
+        '<span>&plus;</span>' +
+        '</button>' +
+        '<div class="accordion-content">' +
+        '<p>' +
+        escapeHTML(product.materials) +
+        '</p>' +
+        '<p style="margin-top:0.5rem;"><strong>Interior Capacity:</strong> ' +
+        escapeHTML(product.capacity) +
+        '.</p>' +
+        '</div>' +
+        '</div>' +
+        '<div class="accordion-item">' +
+        '<button type="button" class="accordion-trigger">' +
+        '<span>Size, Strap &amp; Fit Specifications</span>' +
+        '<span>&plus;</span>' +
+        '</button>' +
+        '<div class="accordion-content">' +
+        '<p>Full Measurements: ' +
+        escapeHTML(product.dimensions) +
+        '<br>Strap Configuration: ' +
+        escapeHTML(product.strapDrop) +
+        '<br>Unladen Weight: ' +
+        escapeHTML(product.weight) +
+        '</p>' +
+        '</div>' +
+        '</div>' +
+        '<div class="accordion-item">' +
+        '<button type="button" class="accordion-trigger">' +
+        '<span>Nationwide Delivery Across Pakistan &amp; Easy Exchange</span>' +
+        '<span>&plus;</span>' +
+        '</button>' +
+        '<div class="accordion-content">' +
+        '<p>Nationwide delivery across Pakistan in 3 to 5 working days. Enjoy free delivery on orders of ' +
+        formatPKR(settings.free_shipping_threshold) +
+        ' or above (flat ' +
+        formatPKR(settings.shipping_fee) +
+        ' nationwide shipping fee below ' +
+        formatPKR(settings.free_shipping_threshold) +
+        '). Cash on Delivery, Bank Transfer, JazzCash, and Easypaisa are available, backed by our hassle-free 14-day easy exchange policy.</p>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '</div>';
 
-    // Bind Gallery Thumbnails & Interactive Hover Zoom (Desktop Pointer Only)
-    const mainImg = document.getElementById('pdpMainImage');
-    const zoomStage = document.getElementById('pdpZoomStage');
-    const thumbsContainer = document.getElementById('pdpThumbs');
+      // Bind Gallery Thumbnails & Interactive Hover Zoom (Desktop Pointer Only)
+      const mainImg = document.getElementById('pdpMainImage');
+      const zoomStage = document.getElementById('pdpZoomStage');
+      const thumbsContainer = document.getElementById('pdpThumbs');
 
-    if (thumbsContainer && mainImg) {
-      thumbsContainer.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-thumb-src]');
-        if (!btn) return;
-        mainImg.src = btn.getAttribute('data-thumb-src');
-        thumbsContainer
-          .querySelectorAll('.pdp-thumb-btn')
-          .forEach(function (b) {
-            b.classList.remove('is-active');
-          });
-        btn.classList.add('is-active');
-      });
-    }
+      if (thumbsContainer && mainImg) {
+        thumbsContainer.addEventListener('click', function (e) {
+          const btn = e.target.closest('[data-thumb-src]');
+          if (!btn) return;
+          mainImg.src = btn.getAttribute('data-thumb-src');
+          thumbsContainer
+            .querySelectorAll('.pdp-thumb-btn')
+            .forEach(function (b) {
+              b.classList.remove('is-active');
+            });
+          btn.classList.add('is-active');
+        });
+      }
 
-    const isTouchDevice =
-      window.matchMedia('(hover: none), (pointer: coarse)').matches ||
-      'ontouchstart' in window;
+      const isTouchDevice =
+        window.matchMedia('(hover: none), (pointer: coarse)').matches ||
+        'ontouchstart' in window;
 
-    if (zoomStage && mainImg && !isTouchDevice) {
-      zoomStage.addEventListener('mousemove', function (e) {
-        const rect = zoomStage.getBoundingClientRect();
-        const x = ((e.clientX - rect.left) / rect.width) * 100;
-        const y = ((e.clientY - rect.top) / rect.height) * 100;
-        mainImg.style.transformOrigin = x + '% ' + y + '%';
-        mainImg.style.transform = 'scale(1.65)';
-      });
-      zoomStage.addEventListener('mouseleave', function () {
-        mainImg.style.transform = 'scale(1)';
-        mainImg.style.transformOrigin = 'center center';
-      });
-    }
+      if (zoomStage && mainImg && !isTouchDevice) {
+        zoomStage.addEventListener('mousemove', function (e) {
+          const rect = zoomStage.getBoundingClientRect();
+          const x = ((e.clientX - rect.left) / rect.width) * 100;
+          const y = ((e.clientY - rect.top) / rect.height) * 100;
+          mainImg.style.transformOrigin = x + '% ' + y + '%';
+          mainImg.style.transform = 'scale(1.65)';
+        });
+        zoomStage.addEventListener('mouseleave', function () {
+          mainImg.style.transform = 'scale(1)';
+          mainImg.style.transformOrigin = 'center center';
+        });
+      }
 
-    // Bind Color Swatches
-    const swatchesContainer = document.getElementById('pdpSwatches');
-    const colorNameSpan = document.getElementById('pdpSelectedColorName');
-    if (swatchesContainer) {
-      swatchesContainer.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-pdp-color]');
-        if (!btn) return;
-        selectedColor = btn.getAttribute('data-pdp-color');
-        if (colorNameSpan) colorNameSpan.textContent = selectedColor;
-        swatchesContainer
-          .querySelectorAll('.pdp-swatch-btn')
-          .forEach(function (b) {
-            b.classList.remove('is-active');
-          });
-        btn.classList.add('is-active');
-      });
-    }
+      // Bind Color Swatches
+      const swatchesContainer = document.getElementById('pdpSwatches');
+      const colorNameSpan = document.getElementById('pdpSelectedColorName');
+      if (swatchesContainer) {
+        swatchesContainer.addEventListener('click', function (e) {
+          const btn = e.target.closest('[data-pdp-color]');
+          if (!btn) return;
+          selectedColor = btn.getAttribute('data-pdp-color');
+          if (colorNameSpan) colorNameSpan.textContent = selectedColor;
+          swatchesContainer
+            .querySelectorAll('.pdp-swatch-btn')
+            .forEach(function (b) {
+              b.classList.remove('is-active');
+            });
+          btn.classList.add('is-active');
+        });
+      }
 
-    // Bind Quantity, Add to Cart & Buy on WhatsApp
-    const qtyInput = document.getElementById('pdpQtyInput');
-    const minusBtn = document.getElementById('pdpQtyMinus');
-    const plusBtn = document.getElementById('pdpQtyPlus');
-    const addBtn = document.getElementById('pdpAddToCartBtn');
-    const buyWhatsAppBtn = document.getElementById('pdpBuyWhatsAppBtn');
+      // Bind Quantity, Add to Cart & Buy on WhatsApp
+      const qtyInput = document.getElementById('pdpQtyInput');
+      const minusBtn = document.getElementById('pdpQtyMinus');
+      const plusBtn = document.getElementById('pdpQtyPlus');
+      const addBtn = document.getElementById('pdpAddToCartBtn');
+      const buyWhatsAppBtn = document.getElementById('pdpBuyWhatsAppBtn');
 
-    if (minusBtn && plusBtn && qtyInput) {
-      minusBtn.addEventListener('click', function () {
-        if (quantity > 1) {
-          quantity--;
+      if (!isSoldOut && minusBtn && plusBtn && qtyInput) {
+        minusBtn.addEventListener('click', function () {
+          if (quantity > 1) {
+            quantity--;
+            qtyInput.value = quantity;
+            if (addBtn) {
+              addBtn.innerHTML =
+                'Add to Shopping Bag &mdash; ' + formatPKR(product.price * quantity);
+            }
+          }
+        });
+        plusBtn.addEventListener('click', function () {
+          quantity++;
           qtyInput.value = quantity;
           if (addBtn) {
             addBtn.innerHTML =
               'Add to Shopping Bag &mdash; ' + formatPKR(product.price * quantity);
           }
-        }
+        });
+      }
+
+      if (addBtn && !isSoldOut) {
+        addBtn.addEventListener('click', function () {
+          store.addToCart(product.id, selectedColor, quantity, true);
+        });
+      }
+
+      if (buyWhatsAppBtn && !isSoldOut) {
+        buyWhatsAppBtn.addEventListener('click', function () {
+          const linePrice = formatPKR(product.price * quantity);
+          const pageUrl = window.location.href;
+          const messageLines = [
+            'Hi Handle & Hue, I would like to buy this bag:',
+            '',
+            'Product: ' + product.name,
+            'Selected Hue: ' + selectedColor,
+            'Quantity: ' + quantity,
+            'Price: ' +
+              linePrice +
+              (quantity > 1 ? ' (' + formatPKR(product.price) + ' each)' : ''),
+            'Product Link: ' + pageUrl
+          ];
+          const waUrl = buildWhatsAppUrl(messageLines.join('\n'));
+          window.open(waUrl, '_blank', 'noopener,noreferrer');
+        });
+      }
+
+      // Bind Accordions
+      pdpRoot.querySelectorAll('.accordion-trigger').forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+          const item = trigger.closest('.accordion-item');
+          if (item) item.classList.toggle('is-open');
+        });
       });
-      plusBtn.addEventListener('click', function () {
-        quantity++;
-        qtyInput.value = quantity;
-        if (addBtn) {
-          addBtn.innerHTML =
-            'Add to Shopping Bag &mdash; ' + formatPKR(product.price * quantity);
-        }
-      });
+
+      // Populate "You May Also Like" Related Products
+      const relatedGrid = document.getElementById('relatedProductsGrid');
+      if (relatedGrid) {
+        const related = products
+          .filter(function (p) {
+            return p.id !== product.id;
+          })
+          .sort(function (a, b) {
+            return (
+              Number(b.category === product.category) -
+              Number(a.category === product.category)
+            );
+          })
+          .slice(0, 4);
+        relatedGrid.innerHTML = related
+          .map(function (p, idx) {
+            return renderProductCard(p, idx);
+          })
+          .join('');
+      }
+
+      if (window.observeReveals) window.observeReveals();
     }
 
-    if (addBtn) {
-      addBtn.addEventListener('click', function () {
-        store.addToCart(product.id, selectedColor, quantity, true);
-      });
-    }
-
-    if (buyWhatsAppBtn) {
-      buyWhatsAppBtn.addEventListener('click', function () {
-        const linePrice = formatPKR(product.price * quantity);
-        const pageUrl = window.location.href;
-        const messageLines = [
-          'Hi Handle & Hue, I would like to buy this bag:',
-          '',
-          'Product: ' + product.name,
-          'Selected Hue: ' + selectedColor,
-          'Quantity: ' + quantity,
-          'Price: ' + linePrice + (quantity > 1 ? ' (' + formatPKR(product.price) + ' each)' : ''),
-          'Product Link: ' + pageUrl
-        ];
-        const waUrl = buildWhatsAppUrl(messageLines.join('\n'));
-        window.open(waUrl, '_blank', 'noopener,noreferrer');
-      });
-    }
-
-    // Bind Accordions
-    pdpRoot.querySelectorAll('.accordion-trigger').forEach(function (trigger) {
-      trigger.addEventListener('click', function () {
-        const item = trigger.closest('.accordion-item');
-        if (item) item.classList.toggle('is-open');
-      });
-    });
-
-    // Populate "You May Also Like" Related Products
-    const relatedGrid = document.getElementById('relatedProductsGrid');
-    if (relatedGrid) {
-      const related = products
-        .filter(function (p) {
-          return p.id !== product.id;
-        })
-        .sort(function (a, b) {
-          return (
-            Number(b.category === product.category) -
-            Number(a.category === product.category)
-          );
-        })
-        .slice(0, 4);
-      relatedGrid.innerHTML = related
-        .map(function (p, idx) {
-          return renderProductCard(p, idx);
-        })
-        .join('');
-    }
-
-    if (window.observeReveals) window.observeReveals();
+    renderPDP();
+    window.addEventListener('handlehue:data-loaded', renderPDP);
   }
 
   /* ==========================================================================
-     6. CART & CHECKOUT PAGE CONTROLLER (WhatsApp Checkout & PKR Totals)
+     6. CART & CHECKOUT PAGE CONTROLLER (WhatsApp Checkout & Dynamic Settings)
      ========================================================================== */
   function initCartPage() {
     const cartItemsContainer = document.getElementById('cartPageItems');
     if (!cartItemsContainer) return;
-
-    const shippingCfg = window.HANDLE_HUE_SHIPPING_CONFIG || {
-      freeShippingThreshold: 10000,
-      flatShippingFee: 250
-    };
-    const FREE_SHIPPING_THRESHOLD = shippingCfg.freeShippingThreshold; // Rs. 10,000
-    const FLAT_SHIPPING_FEE = shippingCfg.flatShippingFee;             // Rs. 250
 
     let discountRate = 0;
     let activePromoCode = '';
@@ -1220,12 +1474,52 @@
     const paymentNoteEl = document.getElementById('checkoutPaymentNote');
     const orderSuccessBox = document.getElementById('orderConfirmationBox');
 
+    function getShippingValues() {
+      const settings = getSettings();
+      return {
+        freeThreshold: Number(settings.free_shipping_threshold) || 10000,
+        flatFee:
+          settings.shipping_fee !== undefined ? Number(settings.shipping_fee) : 250,
+        waDisplay: settings.whatsapp_display || '+92 346 9377256'
+      };
+    }
+
+    function updatePaymentNoteText() {
+      if (!paymentSelect || !paymentNoteEl) return;
+      const cfg = getShippingValues();
+      const paymentNotes = {
+        cod:
+          'Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. You will be contacted on WhatsApp (' +
+          cfg.waDisplay +
+          ') to confirm your order before dispatch.',
+        bank:
+          'You have selected Bank Transfer. Once you submit your order, our concierge team (' +
+          cfg.waDisplay +
+          ') will share our bank account details on WhatsApp to confirm your order.',
+        jazzcash:
+          'You have selected JazzCash. Once you submit your order, our concierge team (' +
+          cfg.waDisplay +
+          ') will share our JazzCash details on WhatsApp to confirm your order.',
+        easypaisa:
+          'You have selected Easypaisa. Once you submit your order, our concierge team (' +
+          cfg.waDisplay +
+          ') will share our Easypaisa details on WhatsApp to confirm your order.'
+      };
+      paymentNoteEl.textContent =
+        paymentNotes[paymentSelect.value] || paymentNotes.cod;
+    }
+
     function renderCartPage() {
       const cart = store.getCart();
       const subtotal = store.getCartSubtotal();
+      const cfg = getShippingValues();
+      const FREE_SHIPPING_THRESHOLD = cfg.freeThreshold;
+      const FLAT_SHIPPING_FEE = cfg.flatFee;
 
-      // Update Free Shipping Meter (Threshold: Rs. 10,000)
-      const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
+      const pct =
+        FREE_SHIPPING_THRESHOLD > 0
+          ? Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100))
+          : 100;
       if (shippingMeterFill) shippingMeterFill.style.width = pct + '%';
       if (shippingMeterText) {
         if (subtotal === 0) {
@@ -1264,52 +1558,57 @@
         cartItemsContainer.innerHTML = cart
           .map(function (item) {
             const encodedId = encodeURIComponent(item.id);
+            const safeName = escapeHTML(item.name);
+            const safeColor = escapeHTML(item.color);
+            const safeCat = escapeHTML(item.category);
+            const safeImg = escapeHTML(item.image);
+            const safeIdAttr = escapeHTML(item.id);
             return (
               '<div class="cart-row">' +
               '<a href="product.html?id=' +
               encodedId +
               '">' +
               '<img src="' +
-              item.image +
+              safeImg +
               '" alt="' +
-              item.name +
+              safeName +
               '" class="cart-row__img">' +
               '</a>' +
               '<div>' +
               '<span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--color-charcoal-muted);">' +
-              item.category +
+              safeCat +
               '</span>' +
               '<h3 style="font-size:1.3rem; margin-bottom:0.25rem;">' +
               '<a href="product.html?id=' +
               encodedId +
               '">' +
-              item.name +
+              safeName +
               '</a>' +
               '</h3>' +
               '<p style="font-size:0.84rem; color:var(--color-charcoal-soft); margin-bottom:0.5rem;">Selected Hue: <strong>' +
-              item.color +
+              safeColor +
               '</strong> &bull; Unit Price: ' +
               formatPKR(item.price) +
               '</p>' +
               '<button type="button" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--color-charcoal-muted); border-bottom:1px solid var(--color-gold);" data-cart-remove="' +
-              item.id +
+              safeIdAttr +
               '" data-cart-color="' +
-              item.color +
+              safeColor +
               '">Remove Item</button>' +
               '</div>' +
               '<div class="qty-selector">' +
               '<button type="button" data-cart-qty="' +
-              item.id +
+              safeIdAttr +
               '" data-cart-color="' +
-              item.color +
+              safeColor +
               '" data-delta="-1" aria-label="Decrease quantity">&minus;</button>' +
               '<input type="text" value="' +
-              item.qty +
+              Number(item.qty) +
               '" readonly aria-label="Quantity">' +
               '<button type="button" data-cart-qty="' +
-              item.id +
+              safeIdAttr +
               '" data-cart-color="' +
-              item.color +
+              safeColor +
               '" data-delta="1" aria-label="Increase quantity">+</button>' +
               '</div>' +
               '<div style="font-size:1.05rem; font-weight:500; min-width:90px; text-align:right;">' +
@@ -1321,7 +1620,6 @@
           .join('');
       }
 
-      // Summary Totals in PKR
       const discountAmount = Math.round(subtotal * discountRate);
       const effectiveShipping =
         subtotal === 0
@@ -1346,6 +1644,7 @@
         }
       }
       if (summaryTotal) summaryTotal.textContent = formatPKR(total);
+      updatePaymentNoteText();
     }
 
     cartItemsContainer.addEventListener('click', function (e) {
@@ -1371,6 +1670,7 @@
     });
 
     window.addEventListener('handlehue:cart-updated', renderCartPage);
+    window.addEventListener('handlehue:data-loaded', renderCartPage);
 
     if (promoForm && promoInput) {
       promoForm.addEventListener('submit', function (e) {
@@ -1380,7 +1680,7 @@
           discountRate = 0.1;
           activePromoCode = code;
           store.showToast(
-            'Privilege code ' + code + ' applied: 10% off your PKR bag subtotal.'
+            'Privilege code ' + escapeHTML(code) + ' applied: 10% off your PKR bag subtotal.'
           );
           renderCartPage();
         } else {
@@ -1389,23 +1689,10 @@
       });
     }
 
-    // Update payment method instruction note dynamically
-    if (paymentSelect && paymentNoteEl) {
-      const paymentNotes = {
-        cod: 'Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. You will be contacted on WhatsApp (+92 346 9377256) to confirm your order before dispatch.',
-        bank: 'You have selected Bank Transfer. Once you submit your order, our concierge team (+92 346 9377256) will share our bank account details on WhatsApp to confirm your order.',
-        jazzcash: 'You have selected JazzCash. Once you submit your order, our concierge team (+92 346 9377256) will share our JazzCash details on WhatsApp to confirm your order.',
-        easypaisa: 'You have selected Easypaisa. Once you submit your order, our concierge team (+92 346 9377256) will share our Easypaisa details on WhatsApp to confirm your order.'
-      };
-      paymentSelect.addEventListener('change', function (e) {
-        paymentNoteEl.textContent =
-          paymentNotes[e.target.value] || paymentNotes.cod;
-      });
+    if (paymentSelect) {
+      paymentSelect.addEventListener('change', updatePaymentNoteText);
     }
 
-    /**
-     * Build the formatted WhatsApp Order message and process order
-     */
     function processOrderSubmission(openWhatsAppTab) {
       const cart = store.getCart();
       if (cart.length === 0) {
@@ -1419,6 +1706,10 @@
         checkoutForm.reportValidity();
         return;
       }
+
+      const cfg = getShippingValues();
+      const FREE_SHIPPING_THRESHOLD = cfg.freeThreshold;
+      const FLAT_SHIPPING_FEE = cfg.flatFee;
 
       const subtotal = store.getCartSubtotal();
       const discountAmount = Math.round(subtotal * discountRate);
@@ -1459,7 +1750,6 @@
       const paymentLabel =
         paymentMethodMap[selectedPaymentKey] || 'Cash on Delivery';
 
-      // Build formatted WhatsApp order message
       const itemLines = cart.map(function (item, index) {
         return (
           index +
@@ -1520,7 +1810,6 @@
         window.open(waUrl, '_blank', 'noopener,noreferrer');
       }
 
-      // Clear cart and reset form after opening WhatsApp
       store.clearCart();
       discountRate = 0;
       activePromoCode = '';
@@ -1532,27 +1821,29 @@
         orderSuccessBox.innerHTML =
           '<span class="eyebrow">Atelier Order Ready on WhatsApp</span>' +
           '<h3 style="font-size:1.95rem; margin-bottom:0.5rem;">Thank you, ' +
-          customerName +
+          escapeHTML(customerName) +
           '</h3>' +
           '<p style="color:var(--color-charcoal-soft); margin-bottom:0.75rem;">' +
           'Your order <strong>#' +
-          orderRef +
+          escapeHTML(orderRef) +
           '</strong> for <strong>' +
           formatPKR(finalTotal) +
           '</strong> (' +
-          paymentLabel +
+          escapeHTML(paymentLabel) +
           ') destined for <strong>' +
-          customerCity +
+          escapeHTML(customerCity) +
           ', ' +
-          customerProvince +
+          escapeHTML(customerProvince) +
           '</strong> has been prepared.' +
           '</p>' +
           '<p style="color:var(--color-charcoal); font-weight:500; font-size:0.95rem; margin-bottom:1.25rem;">' +
-          'Please send the pre-filled message in WhatsApp (+92 346 9377256) to confirm your order.' +
+          'Please send the pre-filled message in WhatsApp (' +
+          escapeHTML(cfg.waDisplay) +
+          ') to confirm your order.' +
           '</p>' +
           '<div style="display:flex; gap:0.85rem; justify-content:center; flex-wrap:wrap;">' +
           '<a href="' +
-          waUrl +
+          escapeHTML(waUrl) +
           '" target="_blank" rel="noopener noreferrer" class="btn btn-gold">Open WhatsApp Message Again</a>' +
           '<a href="shop.html" class="btn btn-outline">Continue Exploring</a>' +
           '</div>';
@@ -1560,7 +1851,7 @@
       }
 
       store.showToast(
-        'Please send the message in WhatsApp to confirm Order ' + orderRef + '!'
+        'Please send the message in WhatsApp to confirm Order ' + escapeHTML(orderRef) + '!'
       );
     }
 
@@ -1595,7 +1886,7 @@
         const name = nameInput && nameInput.value ? nameInput.value : 'Guest';
         store.showToast(
           'Thank you, ' +
-            name +
+            escapeHTML(name) +
             '. Our Pakistan Atelier Concierge will reply within 24 hours.'
         );
         if (feedbackEl) {
@@ -1620,14 +1911,21 @@
   }
 
   /* ==========================================================================
-     Initialize Everything on DOMContentLoaded
+     Initialize Everything on DOMContentLoaded + Trigger Supabase Data Fetch
      ========================================================================== */
   document.addEventListener('DOMContentLoaded', function () {
     initHeaderAndDrawers();
+    syncSettingsAcrossDOM();
     initHomePage();
     initShopPage();
     initProductDetailPage();
     initCartPage();
     initContactPage();
+
+    window.addEventListener('handlehue:data-loaded', syncSettingsAcrossDOM);
+
+    if (window.HandleHueData && typeof window.HandleHueData.loadAll === 'function') {
+      window.HandleHueData.loadAll();
+    }
   });
 })();
