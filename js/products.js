@@ -23,6 +23,20 @@ window.formatPKR = function formatPKR(amount) {
   return 'Rs. ' + formatted;
 };
 
+/* ============================================================================
+   BUSINESS WHATSAPP CONFIGURATION (Single Source of Truth)
+   Business Number: +923469377256 (923469377256 in wa.me links)
+   ============================================================================ */
+window.WHATSAPP_NUMBER = '923469377256';
+window.WHATSAPP_DISPLAY = '+92 346 9377256';
+window.WHATSAPP_TEL = '+923469377256';
+
+window.buildWhatsAppUrl = function buildWhatsAppUrl(message) {
+  const base = 'https://wa.me/' + window.WHATSAPP_NUMBER;
+  if (!message) return base;
+  return base + '?text=' + encodeURIComponent(message);
+};
+
 window.HANDLE_HUE_SHIPPING_CONFIG = {
   freeShippingThreshold: 10000, // Free shipping on orders of Rs. 10,000 or above
   flatShippingFee: 250          // Flat nationwide shipping fee of Rs. 250 below threshold

@@ -2,16 +2,20 @@
  * ============================================================================
  * HANDLE & HUE — Main Application Controller (js/main.js)
  * ============================================================================
- * Adapted for the Pakistan Market (PKR Currency via window.formatPKR):
+ * Adapted for the Pakistan Market (PKR Currency via window.formatPKR &
+ * WhatsApp Checkout via window.WHATSAPP_NUMBER = 923469377256):
  * - Sticky transparent-to-ivory navbar & mobile slide-in drawer
+ * - Floating WhatsApp chat button on every page
  * - Live search overlay with PKR pricing
  * - Product card rendering & quick-add / swatch / wishlist interactions
  * - Home page sections (Categories, New Arrivals, Shop by Color, Bestsellers)
- * - Shop page filtering (Category, Color, Price Range in PKR, Search) & sorting
- * - Product Detail page (Gallery with hover zoom, Swatches, Accordions, Related)
- * - Cart & Checkout page (Rs. 10,000 free shipping threshold, flat Rs. 250 fee,
- *   HUE10 / WELCOME10 promo codes, Pakistan province dropdown, COD / Bank Transfer
- *   / JazzCash / Easypaisa payment options)
+ * - Shop page filtering (collapsible mobile filter panel, Category, Color,
+ *   Price Range in PKR, Search) & sorting
+ * - Product Detail page (Gallery with desktop hover zoom, disabled on touch,
+ *   "Buy on WhatsApp" button, Swatches, Accordions, Related)
+ * - Cart & Checkout page ("Order on WhatsApp" button, Rs. 10,000 free shipping
+ *   threshold, flat Rs. 250 fee, HUE10 / WELCOME10 promo codes, Pakistan
+ *   province dropdown, COD / Bank Transfer / JazzCash / Easypaisa options)
  * - Contact page form & FAQ accordions
  * ============================================================================
  */
@@ -28,9 +32,16 @@
     function (n) {
       return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString();
     };
+  const WHATSAPP_NUMBER = window.WHATSAPP_NUMBER || '923469377256';
+  const buildWhatsAppUrl =
+    window.buildWhatsAppUrl ||
+    function (msg) {
+      const base = 'https://wa.me/' + WHATSAPP_NUMBER;
+      return msg ? base + '?text=' + encodeURIComponent(msg) : base;
+    };
 
   /* ==========================================================================
-     1. Sticky Navbar, Mobile Drawer & Global Overlays
+     1. Sticky Navbar, Mobile Drawer, Global Overlays & Floating WhatsApp Button
      ========================================================================== */
   function initHeaderAndDrawers() {
     const header = document.getElementById('siteHeader');
@@ -165,6 +176,31 @@
       });
       renderSearchPreview('');
     }
+
+    // Floating WhatsApp Chat Button on Every Page
+    initFloatingWhatsAppButton();
+  }
+
+  function initFloatingWhatsAppButton() {
+    const defaultGreeting = 'Hi Handle & Hue, I would like to know more about your bags.';
+    const waHref = buildWhatsAppUrl(defaultGreeting);
+
+    let floatBtn = document.getElementById('floatingWhatsAppBtn');
+    if (!floatBtn) {
+      floatBtn = document.createElement('a');
+      floatBtn.id = 'floatingWhatsAppBtn';
+      floatBtn.className = 'whatsapp-float';
+      floatBtn.target = '_blank';
+      floatBtn.rel = 'noopener noreferrer';
+      floatBtn.setAttribute('aria-label', 'Chat with Handle & Hue on WhatsApp');
+      floatBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
+        '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' +
+        '</svg>' +
+        '<span>WhatsApp Us</span>';
+      document.body.appendChild(floatBtn);
+    }
+    floatBtn.href = waHref;
   }
 
   /* ==========================================================================
@@ -179,7 +215,7 @@
     const encodedId = encodeURIComponent(product.id);
 
     const comparePriceHtml = product.compareAtPrice
-      ? '<span style="font-size:0.8rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.4rem; font-weight:300;">' +
+      ? '<span style="font-size:0.76rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.35rem; font-weight:300;">' +
         formatPKR(product.compareAtPrice) +
         '</span>'
       : '';
@@ -507,6 +543,8 @@
       sort: params.get('sort') || 'featured'
     };
 
+    const shopSidebar = document.getElementById('shopSidebar');
+    const mobileFilterToggleBtn = document.getElementById('mobileFilterToggleBtn');
     const catContainer = document.getElementById('shopCategoryFilters');
     const colorContainer = document.getElementById('shopColorFilters');
     const priceSlider = document.getElementById('shopPriceSlider');
@@ -516,6 +554,18 @@
     const countLabel = document.getElementById('shopResultsCount');
     const activeFiltersBar = document.getElementById('activeFiltersBar');
     const clearAllBtn = document.getElementById('clearAllFiltersBtn');
+
+    // Mobile Collapsible Filter Panel Toggle
+    if (mobileFilterToggleBtn && shopSidebar) {
+      mobileFilterToggleBtn.addEventListener('click', function () {
+        const isOpen = shopSidebar.classList.toggle('is-open');
+        mobileFilterToggleBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        const labelSpan = mobileFilterToggleBtn.querySelector('[data-filter-toggle-label]');
+        if (labelSpan) {
+          labelSpan.textContent = isOpen ? 'Hide Filters & Refine' : 'Filter & Refine Pieces';
+        }
+      });
+    }
 
     function renderFilterControls() {
       if (catContainer) {
@@ -780,7 +830,7 @@
   }
 
   /* ==========================================================================
-     5. PRODUCT DETAIL PAGE CONTROLLER (Gallery Zoom, Swatches, Related)
+     5. PRODUCT DETAIL PAGE CONTROLLER (Gallery Zoom, Buy on WhatsApp, Related)
      ========================================================================== */
   function initProductDetailPage() {
     const pdpRoot = document.getElementById('pdpDetailContainer');
@@ -941,12 +991,20 @@
       (wished ? 'is-active' : '') +
       '" id="pdpWishlistBtn" data-wishlist-btn="' +
       product.id +
-      '" aria-label="Add to Wishlist" style="padding:0.95rem 1.25rem;">' +
+      '" aria-label="Add to Wishlist" style="padding:0.85rem 1.15rem;">' +
       '<svg viewBox="0 0 24 24" width="18" height="18" fill="' +
       (wished ? 'currentColor' : 'none') +
       '" stroke="currentColor" stroke-width="1.7">' +
       '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
       '</svg>' +
+      '</button>' +
+      '</div>' +
+      '<div class="pdp-whatsapp-row">' +
+      '<button type="button" class="btn btn-gold" id="pdpBuyWhatsAppBtn">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">' +
+      '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' +
+      '</svg>' +
+      '<span>Buy on WhatsApp</span>' +
       '</button>' +
       '</div>' +
       '<div class="pdp-accordions">' +
@@ -991,7 +1049,7 @@
       '</div>' +
       '</div>';
 
-    // Bind Gallery Thumbnails & Interactive Hover Zoom
+    // Bind Gallery Thumbnails & Interactive Hover Zoom (Desktop Pointer Only)
     const mainImg = document.getElementById('pdpMainImage');
     const zoomStage = document.getElementById('pdpZoomStage');
     const thumbsContainer = document.getElementById('pdpThumbs');
@@ -1010,7 +1068,11 @@
       });
     }
 
-    if (zoomStage && mainImg) {
+    const isTouchDevice =
+      window.matchMedia('(hover: none), (pointer: coarse)').matches ||
+      'ontouchstart' in window;
+
+    if (zoomStage && mainImg && !isTouchDevice) {
       zoomStage.addEventListener('mousemove', function (e) {
         const rect = zoomStage.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -1042,11 +1104,12 @@
       });
     }
 
-    // Bind Quantity & Add to Cart
+    // Bind Quantity, Add to Cart & Buy on WhatsApp
     const qtyInput = document.getElementById('pdpQtyInput');
     const minusBtn = document.getElementById('pdpQtyMinus');
     const plusBtn = document.getElementById('pdpQtyPlus');
     const addBtn = document.getElementById('pdpAddToCartBtn');
+    const buyWhatsAppBtn = document.getElementById('pdpBuyWhatsAppBtn');
 
     if (minusBtn && plusBtn && qtyInput) {
       minusBtn.addEventListener('click', function () {
@@ -1072,6 +1135,24 @@
     if (addBtn) {
       addBtn.addEventListener('click', function () {
         store.addToCart(product.id, selectedColor, quantity, true);
+      });
+    }
+
+    if (buyWhatsAppBtn) {
+      buyWhatsAppBtn.addEventListener('click', function () {
+        const linePrice = formatPKR(product.price * quantity);
+        const pageUrl = window.location.href;
+        const messageLines = [
+          'Hi Handle & Hue, I would like to buy this bag:',
+          '',
+          'Product: ' + product.name,
+          'Selected Hue: ' + selectedColor,
+          'Quantity: ' + quantity,
+          'Price: ' + linePrice + (quantity > 1 ? ' (' + formatPKR(product.price) + ' each)' : ''),
+          'Product Link: ' + pageUrl
+        ];
+        const waUrl = buildWhatsAppUrl(messageLines.join('\n'));
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
       });
     }
 
@@ -1108,7 +1189,7 @@
   }
 
   /* ==========================================================================
-     6. CART & CHECKOUT PAGE CONTROLLER (Pakistan Market & PKR Totals)
+     6. CART & CHECKOUT PAGE CONTROLLER (WhatsApp Checkout & PKR Totals)
      ========================================================================== */
   function initCartPage() {
     const cartItemsContainer = document.getElementById('cartPageItems');
@@ -1134,6 +1215,7 @@
     const promoForm = document.getElementById('promoCodeForm');
     const promoInput = document.getElementById('promoCodeInput');
     const checkoutForm = document.getElementById('checkoutForm');
+    const whatsappOrderBtn = document.getElementById('whatsappOrderBtn');
     const paymentSelect = document.getElementById('checkoutPayment');
     const paymentNoteEl = document.getElementById('checkoutPaymentNote');
     const orderSuccessBox = document.getElementById('orderConfirmationBox');
@@ -1197,7 +1279,7 @@
               '<span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--color-charcoal-muted);">' +
               item.category +
               '</span>' +
-              '<h3 style="font-size:1.35rem; margin-bottom:0.25rem;">' +
+              '<h3 style="font-size:1.3rem; margin-bottom:0.25rem;">' +
               '<a href="product.html?id=' +
               encodedId +
               '">' +
@@ -1230,7 +1312,7 @@
               item.color +
               '" data-delta="1" aria-label="Increase quantity">+</button>' +
               '</div>' +
-              '<div style="font-size:1.1rem; font-weight:500; min-width:95px; text-align:right;">' +
+              '<div style="font-size:1.05rem; font-weight:500; min-width:90px; text-align:right;">' +
               formatPKR(item.price * item.qty) +
               '</div>' +
               '</div>'
@@ -1310,10 +1392,10 @@
     // Update payment method instruction note dynamically
     if (paymentSelect && paymentNoteEl) {
       const paymentNotes = {
-        cod: 'Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. Our concierge team will call or message you on WhatsApp to confirm your order before dispatch.',
-        bank: 'You have selected Bank Transfer. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our Allied Bank / Meezan Bank account details to confirm your order.',
-        jazzcash: 'You have selected JazzCash. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our official JazzCash merchant details to confirm your order.',
-        easypaisa: 'You have selected Easypaisa. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our official Easypaisa account details to confirm your order.'
+        cod: 'Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. You will be contacted on WhatsApp (+92 346 9377256) to confirm your order before dispatch.',
+        bank: 'You have selected Bank Transfer. Once you submit your order, our concierge team (+92 346 9377256) will share our bank account details on WhatsApp to confirm your order.',
+        jazzcash: 'You have selected JazzCash. Once you submit your order, our concierge team (+92 346 9377256) will share our JazzCash details on WhatsApp to confirm your order.',
+        easypaisa: 'You have selected Easypaisa. Once you submit your order, our concierge team (+92 346 9377256) will share our Easypaisa details on WhatsApp to confirm your order.'
       };
       paymentSelect.addEventListener('change', function (e) {
         paymentNoteEl.textContent =
@@ -1321,88 +1403,178 @@
       });
     }
 
+    /**
+     * Build the formatted WhatsApp Order message and process order
+     */
+    function processOrderSubmission(openWhatsAppTab) {
+      const cart = store.getCart();
+      if (cart.length === 0) {
+        store.showToast(
+          'Your shopping bag is empty. Please add a piece before checkout.'
+        );
+        return;
+      }
+
+      if (checkoutForm && !checkoutForm.checkValidity()) {
+        checkoutForm.reportValidity();
+        return;
+      }
+
+      const subtotal = store.getCartSubtotal();
+      const discountAmount = Math.round(subtotal * discountRate);
+      const effectiveShipping =
+        subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE;
+      const finalTotal = Math.max(
+        0,
+        subtotal - discountAmount + effectiveShipping
+      );
+
+      const orderRef =
+        'HH-' +
+        new Date().getFullYear() +
+        '-' +
+        Math.floor(1000 + Math.random() * 9000);
+
+      const customerName =
+        (document.getElementById('checkoutFullName')?.value || '').trim() ||
+        'Valued Client';
+      const customerPhone =
+        (document.getElementById('checkoutPhone')?.value || '').trim();
+      const customerCity =
+        (document.getElementById('checkoutCity')?.value || '').trim();
+      const customerProvince =
+        (document.getElementById('checkoutProvince')?.value || '').trim();
+      const customerAddress =
+        (document.getElementById('checkoutAddress')?.value || '').trim();
+      const orderNote =
+        (document.getElementById('checkoutGiftNote')?.value || '').trim();
+
+      const paymentMethodMap = {
+        cod: 'Cash on Delivery',
+        bank: 'Bank Transfer',
+        jazzcash: 'JazzCash',
+        easypaisa: 'Easypaisa'
+      };
+      const selectedPaymentKey = paymentSelect ? paymentSelect.value : 'cod';
+      const paymentLabel =
+        paymentMethodMap[selectedPaymentKey] || 'Cash on Delivery';
+
+      // Build formatted WhatsApp order message
+      const itemLines = cart.map(function (item, index) {
+        return (
+          index +
+          1 +
+          '. ' +
+          item.name +
+          ' (Hue: ' +
+          item.color +
+          ') x ' +
+          item.qty +
+          ' — ' +
+          formatPKR(item.price * item.qty)
+        );
+      });
+
+      const messageLines = [
+        'Handle & Hue — New Atelier Order (' + orderRef + ')',
+        '------------------------------',
+        'Customer Details:',
+        'Name: ' + customerName,
+        'Phone: ' + customerPhone,
+        'City: ' + customerCity,
+        'Province: ' + customerProvince,
+        'Address: ' + customerAddress,
+        '',
+        'Order Items:',
+        itemLines.join('\n'),
+        '',
+        'Order Summary:',
+        'Subtotal: ' + formatPKR(subtotal)
+      ];
+
+      if (discountAmount > 0) {
+        messageLines.push(
+          'Discount (' +
+            (activePromoCode || '10%') +
+            '): -' +
+            formatPKR(discountAmount)
+        );
+      }
+
+      messageLines.push(
+        'Shipping Fee: ' +
+          (effectiveShipping === 0
+            ? 'Free (' + formatPKR(0) + ')'
+            : formatPKR(effectiveShipping))
+      );
+      messageLines.push('Total: ' + formatPKR(finalTotal));
+      messageLines.push('Payment Method: ' + paymentLabel);
+
+      if (orderNote) {
+        messageLines.push('Order Note: ' + orderNote);
+      }
+
+      const waUrl = buildWhatsAppUrl(messageLines.join('\n'));
+
+      if (openWhatsAppTab) {
+        window.open(waUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      // Clear cart and reset form after opening WhatsApp
+      store.clearCart();
+      discountRate = 0;
+      activePromoCode = '';
+      if (checkoutForm) checkoutForm.reset();
+      renderCartPage();
+
+      if (orderSuccessBox) {
+        orderSuccessBox.style.display = 'block';
+        orderSuccessBox.innerHTML =
+          '<span class="eyebrow">Atelier Order Ready on WhatsApp</span>' +
+          '<h3 style="font-size:1.95rem; margin-bottom:0.5rem;">Thank you, ' +
+          customerName +
+          '</h3>' +
+          '<p style="color:var(--color-charcoal-soft); margin-bottom:0.75rem;">' +
+          'Your order <strong>#' +
+          orderRef +
+          '</strong> for <strong>' +
+          formatPKR(finalTotal) +
+          '</strong> (' +
+          paymentLabel +
+          ') destined for <strong>' +
+          customerCity +
+          ', ' +
+          customerProvince +
+          '</strong> has been prepared.' +
+          '</p>' +
+          '<p style="color:var(--color-charcoal); font-weight:500; font-size:0.95rem; margin-bottom:1.25rem;">' +
+          'Please send the pre-filled message in WhatsApp (+92 346 9377256) to confirm your order.' +
+          '</p>' +
+          '<div style="display:flex; gap:0.85rem; justify-content:center; flex-wrap:wrap;">' +
+          '<a href="' +
+          waUrl +
+          '" target="_blank" rel="noopener noreferrer" class="btn btn-gold">Open WhatsApp Message Again</a>' +
+          '<a href="shop.html" class="btn btn-outline">Continue Exploring</a>' +
+          '</div>';
+        orderSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      store.showToast(
+        'Please send the message in WhatsApp to confirm Order ' + orderRef + '!'
+      );
+    }
+
+    if (whatsappOrderBtn) {
+      whatsappOrderBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        processOrderSubmission(true);
+      });
+    }
+
     if (checkoutForm) {
       checkoutForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (store.getCartCount() === 0) {
-          store.showToast(
-            'Your shopping bag is empty. Please add a piece before checkout.'
-          );
-          return;
-        }
-
-        const subtotal = store.getCartSubtotal();
-        const discountAmount = Math.round(subtotal * discountRate);
-        const effectiveShipping =
-          subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE;
-        const finalTotal = Math.max(
-          0,
-          subtotal - discountAmount + effectiveShipping
-        );
-
-        const orderRef =
-          'HH-' +
-          new Date().getFullYear() +
-          '-' +
-          Math.floor(1000 + Math.random() * 9000);
-        const customerNameEl = document.getElementById('checkoutFullName');
-        const customerPhoneEl = document.getElementById('checkoutPhone');
-        const customerCityEl = document.getElementById('checkoutCity');
-        const customerProvinceEl = document.getElementById('checkoutProvince');
-        const paymentOptionText =
-          paymentSelect && paymentSelect.options[paymentSelect.selectedIndex]
-            ? paymentSelect.options[paymentSelect.selectedIndex].text
-            : 'Cash on Delivery (COD)';
-
-        const customerName =
-          customerNameEl && customerNameEl.value
-            ? customerNameEl.value
-            : 'Valued Client';
-        const customerPhone =
-          customerPhoneEl && customerPhoneEl.value ? customerPhoneEl.value : '';
-        const customerLocation =
-          (customerCityEl ? customerCityEl.value : '') +
-          (customerProvinceEl ? ', ' + customerProvinceEl.value : '');
-
-        store.clearCart();
-        discountRate = 0;
-        activePromoCode = '';
-        checkoutForm.reset();
-        renderCartPage();
-
-        if (orderSuccessBox) {
-          orderSuccessBox.style.display = 'block';
-          orderSuccessBox.innerHTML =
-            '<span class="eyebrow">Atelier Order Confirmed</span>' +
-            '<h3 style="font-size:2rem; margin-bottom:0.5rem;">Thank you, ' +
-            customerName +
-            '</h3>' +
-            '<p style="color:var(--color-charcoal-soft); margin-bottom:0.75rem;">' +
-            'Your order <strong>#' +
-            orderRef +
-            '</strong> for <strong>' +
-            formatPKR(finalTotal) +
-            '</strong> (' +
-            paymentOptionText +
-            ') destined for <strong>' +
-            customerLocation +
-            '</strong> has been received.' +
-            '</p>' +
-            '<p style="color:var(--color-charcoal-soft); font-size:0.9rem; margin-bottom:1.5rem;">' +
-            'Our concierge team will contact you shortly at <strong>' +
-            customerPhone +
-            '</strong> to confirm your order. Nationwide delivery across Pakistan takes 3 to 5 working days.' +
-            '</p>' +
-            '<a href="shop.html" class="btn btn-gold">Continue Exploring</a>';
-          orderSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        store.showToast(
-          'Order ' +
-            orderRef +
-            ' (' +
-            formatPKR(finalTotal) +
-            ') confirmed! We will contact you shortly.'
-        );
+        processOrderSubmission(true);
       });
     }
 
