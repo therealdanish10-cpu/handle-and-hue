@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Aurelia Structured Tote">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F7EFEA"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#F0CFC3"/>
+      <stop offset="65%" stop-color="#E2B6A7"/>
+      <stop offset="100%" stop-color="#D1A08F"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E2B6A7"/>
+      <stop offset="100%" stop-color="#D1A08F"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D1A08F"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <circle cx="400" cy="440" r="290" fill="#F4D9D0" fill-opacity="0.28" stroke="#C9A66B" stroke-width="1" stroke-dasharray="6 4"/>
+      <text x="400" y="120" text-anchor="middle" font-family="'Jost', sans-serif" font-size="13" letter-spacing="0.3em" fill="#C9A66B">ARTISANAL HARDWARE &amp; FULL-GRAIN CALFSKIN</text>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g transform="translate(-260, -210) scale(1.65)">
+    <g >
+        <!-- Rear Handle -->
+        <path d="M315 290 C315 165, 485 165, 485 290" fill="none" stroke="url(#bagShadow)" stroke-width="16" stroke-linecap="round"/>
+        <!-- Main Winged Tote Body -->
+        <path d="M210 285 L590 285 L555 615 C552 635, 535 648, 512 648 L288 648 C265 648, 248 635, 245 615 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.45"/>
+        <!-- Center Seam & Side Gusset Lines -->
+        <path d="M250 285 L285 646 M550 285 L515 646" stroke="url(#bagShadow)" stroke-width="1.5" stroke-opacity="0.5" fill="none"/>
+        <line x1="400" y1="345" x2="400" y2="646" stroke="url(#bagShadow)" stroke-width="1" stroke-opacity="0.35"/>
+        <!-- Top Belt Strap -->
+        <rect x="232" y="325" width="336" height="22" rx="4" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="0.8" stroke-opacity="0.5"/>
+        <!-- Front Tubular Handles -->
+        <path d="M300 335 C300 155, 500 155, 500 335" fill="none" stroke="url(#bagBody)" stroke-width="17" stroke-linecap="round"/>
+        <path d="M300 335 C300 155, 500 155, 500 335" fill="none" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.4" stroke-linecap="round"/>
+        <!-- Gold Hardware Mounts & Turnlock -->
+        <rect x="291" y="322" width="18" height="28" rx="4" fill="url(#goldGrad)"/>
+        <rect x="491" y="322" width="18" height="28" rx="4" fill="url(#goldGrad)"/>
+        <rect x="382" y="318" width="36" height="36" rx="6" fill="url(#goldGrad)" stroke="#FAF6F0" stroke-width="1"/>
+        <ellipse cx="400" cy="336" rx="6" ry="10" fill="#9A783E"/>
+        <!-- Subtle Stamp -->
+        <text x="400" y="392" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="11" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+      </g>
+  </g>
+</svg>

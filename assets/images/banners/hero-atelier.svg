@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080" preserveAspectRatio="xMidYMid slice">
+  <!-- REPLACE WITH REAL HERO PHOTO: Swap 'assets/images/banners/hero-atelier.svg' in css/parallax.css or index.html with your 1920x1080 hero image -->
+  <defs>
+    <linearGradient id="heroSky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="45%" stop-color="#F6E5DE"/>
+      <stop offset="100%" stop-color="#EED2C6"/>
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="72%" cy="38%" r="52%">
+      <stop offset="0%" stop-color="#FFFDF9" stop-opacity="0.9"/>
+      <stop offset="55%" stop-color="#F4D9D0" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#E8C5B8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5CE9E"/>
+      <stop offset="50%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9E7B42"/>
+    </linearGradient>
+    <linearGradient id="blushBag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F6DFD7"/>
+      <stop offset="60%" stop-color="#E8C3B6"/>
+      <stop offset="100%" stop-color="#D1A393"/>
+    </linearGradient>
+    <linearGradient id="ivoryBag" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFDF9"/>
+      <stop offset="65%" stop-color="#EFE6D8"/>
+      <stop offset="100%" stop-color="#DACBB6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#heroSky)"/>
+  <rect width="1920" height="1080" fill="url(#sunGlow)"/>
+  
+  <!-- Architectural Sunlit Arches on the Right Side -->
+  <path d="M1060 1080 L1060 290 C1060 95, 1480 95, 1480 290 L1480 1080 Z" fill="#FAF6F0" fill-opacity="0.65" stroke="#C9A66B" stroke-width="1.5" stroke-opacity="0.45"/>
+  <path d="M1340 1080 L1340 380 C1340 210, 1720 210, 1720 380 L1720 1080 Z" fill="#F4D9D0" fill-opacity="0.55" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.35"/>
+  
+  <!-- Soft Diagonal Window Light Beams -->
+  <polygon points="900,0 1350,0 1920,880 1920,1080 1420,1080" fill="#FFFDF9" fill-opacity="0.28"/>
+  
+  <!-- Travertine Stone Plinths -->
+  <rect x="1020" y="760" width="380" height="320" fill="#EFE7DC" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.4"/>
+  <rect x="1350" y="680" width="360" height="400" fill="#E6DDD0" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.4"/>
+  
+  <!-- Hero Bag #1 on Higher Plinth (Sculptural Ivory Arch Handbag) -->
+  <g transform="translate(1330, 260) scale(0.68)">
+    <ellipse cx="300" cy="610" rx="160" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+    <path d="M195 340 C195 145, 405 145, 405 340" fill="none" stroke="url(#ivoryBag)" stroke-width="24" stroke-linecap="round"/>
+    <circle cx="195" cy="335" r="16" fill="none" stroke="url(#goldAccent)" stroke-width="6"/>
+    <circle cx="405" cy="335" r="16" fill="none" stroke="url(#goldAccent)" stroke-width="6"/>
+    <path d="M135 590 C125 380, 175 285, 300 285 C425 285, 475 380, 465 590 C463 612, 444 626, 420 626 L180 626 C156 626, 137 612, 135 590 Z" fill="url(#ivoryBag)" stroke="#C9A66B" stroke-width="1.5"/>
+    <path d="M158 350 Q300 455 442 350" fill="none" stroke="#D5C6B0" stroke-width="2.5"/>
+    <circle cx="300" cy="402" r="18" fill="url(#goldAccent)"/>
+  </g>
+
+  <!-- Hero Bag #2 on Lower Plinth (Blush Winged Tote) -->
+  <g transform="translate(990, 340) scale(0.68)">
+    <ellipse cx="320" cy="620" rx="185" ry="20" fill="#2B2B2B" fill-opacity="0.14"/>
+    <path d="M220 315 C220 135, 420 135, 420 315" fill="none" stroke="url(#blushBag)" stroke-width="18" stroke-linecap="round"/>
+    <path d="M130 265 L510 265 L475 595 C472 615, 455 628, 432 628 L208 628 C185 628, 168 615, 165 595 Z" fill="url(#blushBag)" stroke="#C9A66B" stroke-width="1.5"/>
+    <rect x="152" y="305" width="336" height="22" rx="4" fill="#E3BCB0" stroke="#C9A66B" stroke-width="1"/>
+    <rect x="302" y="298" width="36" height="36" rx="6" fill="url(#goldAccent)"/>
+    <text x="320" y="375" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="13" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+  </g>
+
+  <!-- Delicate Gold Botanical & Geometric Line Art Overlay -->
+  <circle cx="1520" cy="240" r="95" fill="none" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.45"/>
+  <path d="M920 920 Q1120 780 1320 920" fill="none" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.4"/>
+</svg>

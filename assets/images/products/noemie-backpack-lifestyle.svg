@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Noémie Convertible Backpack">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F8F1ED"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#F4D9D0"/>
+      <stop offset="65%" stop-color="#E5C2B7"/>
+      <stop offset="100%" stop-color="#CFA598"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E5C2B7"/>
+      <stop offset="100%" stop-color="#CFA598"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#CFA598"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <rect x="90" y="80" width="620" height="720" rx="310" fill="#F4D9D0" fill-opacity="0.35"/>
+      <line x1="80" y1="665" x2="720" y2="665" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.4"/>
+      <text x="400" y="130" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-style="italic" font-size="22" fill="#2B2B2B" fill-opacity="0.65">Atelier Edition — Carry your color</text>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g transform="translate(0, 20) scale(0.92)">
+    <g >
+        <!-- Top Loop -->
+        <path d="M355 255 C355 195, 445 195, 445 255" fill="none" stroke="url(#bagAccent)" stroke-width="14" stroke-linecap="round"/>
+        <!-- Soft Drawstring Backpack Body -->
+        <path d="M275 275 L525 275 L560 595 C562 628, 538 648, 502 648 L298 648 C262 648, 238 628, 240 595 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.5"/>
+        <!-- Cinched Top & Gold Eyelets -->
+        <line x1="270" y1="315" x2="530" y2="315" stroke="url(#bagShadow)" stroke-width="6"/>
+        <circle cx="310" cy="315" r="7" fill="url(#goldGrad)"/>
+        <circle cx="365" cy="315" r="7" fill="url(#goldGrad)"/>
+        <circle cx="435" cy="315" r="7" fill="url(#goldGrad)"/>
+        <circle cx="490" cy="315" r="7" fill="url(#goldGrad)"/>
+        <!-- Soft Curved Flap -->
+        <path d="M295 275 L505 275 L485 435 C478 468, 322 468, 315 435 Z" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="1.1"/>
+        <circle cx="400" cy="435" r="15" fill="url(#goldGrad)"/>
+        <!-- Tassel Ties -->
+        <path d="M400 450 Q385 510 375 545 M400 450 Q415 510 425 545" stroke="url(#bagAccent)" stroke-width="5" stroke-linecap="round" fill="none"/>
+      </g>
+  </g>
+</svg>

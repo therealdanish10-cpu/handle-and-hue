@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Camille Top-Handle Satchel">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F3F4F0"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#C5CEBE"/>
+      <stop offset="65%" stop-color="#B0BCA8"/>
+      <stop offset="100%" stop-color="#96A48D"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B0BCA8"/>
+      <stop offset="100%" stop-color="#96A48D"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#96A48D"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <path d="M160 720 L160 220 C160 110, 640 110, 640 220 L640 720 Z" fill="#F4D9D0" fill-opacity="0.32" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.35"/>
+      <circle cx="590" cy="210" r="65" fill="#C9A66B" fill-opacity="0.12"/>
+      <!-- Travertine Pedestal Block -->
+      <path d="M170 640 L630 640 L660 730 L140 730 Z" fill="#EFE7DC" stroke="#C9A66B" stroke-width="0.8" stroke-opacity="0.4"/>
+      <rect x="140" y="730" width="520" height="45" fill="#E4D9C8"/>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g >
+    <g transform="translate(25, -8) rotate(-4 400 450) scale(1.03)">
+        <!-- Structured Top Handle -->
+        <path d="M330 285 C330 195, 470 195, 470 285" fill="none" stroke="url(#bagAccent)" stroke-width="18" stroke-linecap="round"/>
+        <rect x="320" y="278" width="20" height="16" rx="3" fill="url(#goldGrad)"/>
+        <rect x="460" y="278" width="20" height="16" rx="3" fill="url(#goldGrad)"/>
+        <!-- Trapezoid Satchel Body -->
+        <path d="M255 290 L545 290 L580 615 C582 634, 566 646, 545 646 L255 646 C234 646, 218 634, 220 615 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.45"/>
+        <!-- Satchel Flap -->
+        <path d="M253 290 L547 290 L558 430 C558 446, 542 456, 524 456 L276 456 C258 456, 242 446, 242 430 Z" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="1"/>
+        <!-- Clochette Key Tag -->
+        <line x1="330" y1="292" x2="305" y2="410" stroke="url(#bagShadow)" stroke-width="4"/>
+        <path d="M292 405 L318 405 L324 455 L286 455 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1"/>
+        <!-- Turnlock Plaque -->
+        <rect x="372" y="438" width="56" height="34" rx="5" fill="url(#goldGrad)"/>
+        <circle cx="400" cy="455" r="7" fill="#FAF6F0"/>
+      </g>
+  </g>
+</svg>

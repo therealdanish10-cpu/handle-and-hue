@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 900" width="1920" height="900" preserveAspectRatio="xMidYMid slice">
+  <!-- REPLACE WITH REAL BANNER PHOTO: Swap 'assets/images/banners/parallax-season.svg' with your seasonal campaign photo -->
+  <defs>
+    <linearGradient id="seasonBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F4D9D0"/>
+      <stop offset="50%" stop-color="#FAF6F0"/>
+      <stop offset="100%" stop-color="#EDD0C5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="900" fill="url(#seasonBg)"/>
+  <!-- Soft Overlapping Blush & Ivory Sculptural Shapes -->
+  <circle cx="340" cy="450" r="320" fill="#FAF6F0" fill-opacity="0.65" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.35"/>
+  <circle cx="1580" cy="420" r="350" fill="#F4D9D0" fill-opacity="0.55" stroke="#C9A66B" stroke-width="1" stroke-opacity="0.35"/>
+  <path d="M680 900 L680 220 C680 40, 1240 40, 1240 220 L1240 900 Z" fill="#FAF6F0" fill-opacity="0.75" stroke="#C9A66B" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Left & Right Editorial Silhouette Bags -->
+  <g transform="translate(140, 210) scale(0.55)" opacity="0.85">
+    <g >
+        <!-- Sculptural Arch Handle -->
+        <path d="M295 360 C295 165, 505 165, 505 360" fill="none" stroke="url(#bagAccent)" stroke-width="22" stroke-linecap="round"/>
+        <!-- Gold Rings -->
+        <circle cx="295" cy="355" r="16" fill="none" stroke="url(#goldGrad)" stroke-width="6"/>
+        <circle cx="505" cy="355" r="16" fill="none" stroke="url(#goldGrad)" stroke-width="6"/>
+        <!-- Dome Body -->
+        <path d="M235 610 C225 400, 275 305, 400 305 C525 305, 575 400, 565 610 C563 632, 544 646, 520 646 L280 646 C256 646, 237 632, 235 610 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.4"/>
+        <!-- Curved Flap -->
+        <path d="M258 370 Q400 475 542 370" fill="none" stroke="url(#bagShadow)" stroke-width="2.5"/>
+        <path d="M262 365 Q400 468 538 365" fill="none" stroke="#C9A66B" stroke-width="0.9" stroke-dasharray="4 3" stroke-opacity="0.65"/>
+        <!-- Clasp -->
+        <circle cx="400" cy="422" r="18" fill="url(#goldGrad)"/>
+        <circle cx="400" cy="422" r="7" fill="#FAF6F0"/>
+        <text x="400" y="595" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="11" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+      </g>
+  </g>
+  <g transform="translate(1360, 210) scale(0.55)" opacity="0.85">
+    <g >
+        <!-- Slender Dual Handles -->
+        <path d="M300 340 C300 185, 500 185, 500 340" fill="none" stroke="url(#bagAccent)" stroke-width="13" stroke-linecap="round"/>
+        <!-- East-West Horizontal Body -->
+        <path d="M185 335 L615 335 L590 615 C588 634, 570 646, 548 646 L252 646 C230 646, 212 634, 210 615 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.3" stroke-opacity="0.5"/>
+        <!-- Belted Strap Detail -->
+        <rect x="195" y="385" width="410" height="18" rx="4" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="0.8"/>
+        <!-- Vertical Strap Extensions & Gold Buckles -->
+        <rect x="292" y="335" width="16" height="125" rx="4" fill="url(#bagAccent)"/>
+        <rect x="492" y="335" width="16" height="125" rx="4" fill="url(#bagAccent)"/>
+        <rect x="287" y="378" width="26" height="32" rx="4" fill="none" stroke="url(#goldGrad)" stroke-width="4.5"/>
+        <rect x="487" y="378" width="26" height="32" rx="4" fill="none" stroke="url(#goldGrad)" stroke-width="4.5"/>
+        <text x="400" y="510" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="12" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+      </g>
+  </g>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Élodie Saddle Crossbody">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F7EFEA"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#C98A74"/>
+      <stop offset="65%" stop-color="#B5745E"/>
+      <stop offset="100%" stop-color="#9C5E49"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B5745E"/>
+      <stop offset="100%" stop-color="#9C5E49"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9C5E49"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <circle cx="400" cy="440" r="290" fill="#F4D9D0" fill-opacity="0.28" stroke="#C9A66B" stroke-width="1" stroke-dasharray="6 4"/>
+      <text x="400" y="120" text-anchor="middle" font-family="'Jost', sans-serif" font-size="13" letter-spacing="0.3em" fill="#C9A66B">ARTISANAL HARDWARE &amp; FULL-GRAIN CALFSKIN</text>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g transform="translate(-260, -210) scale(1.65)">
+    <g >
+        <!-- Crossbody Strap -->
+        <path d="M235 355 C205 160, 595 160, 565 355" fill="none" stroke="url(#bagAccent)" stroke-width="14"/>
+        <rect x="224" y="340" width="22" height="28" rx="5" fill="url(#goldGrad)"/>
+        <rect x="554" y="340" width="22" height="28" rx="5" fill="url(#goldGrad)"/>
+        <!-- Equitation Saddle Body -->
+        <path d="M230 350 L570 350 L565 465 C565 575, 495 645, 400 645 C305 645, 235 575, 235 465 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.3" stroke-opacity="0.5"/>
+        <!-- Curved Saddle Flap -->
+        <path d="M232 350 L568 350 L562 440 C555 520, 485 565, 400 565 C315 565, 245 520, 238 440 Z" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="1.2"/>
+        <!-- Oversized Champagne Gold Stirrup Ring -->
+        <circle cx="400" cy="555" r="34" fill="none" stroke="url(#goldGrad)" stroke-width="9"/>
+        <rect x="386" y="510" width="28" height="36" rx="5" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1"/>
+      </g>
+  </g>
+</svg>

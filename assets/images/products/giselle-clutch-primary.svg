@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Giselle Pearl Frame Clutch">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F2EAE2"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#F8F3EA"/>
+      <stop offset="65%" stop-color="#EBE2D2"/>
+      <stop offset="100%" stop-color="#D7CBB7"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EBE2D2"/>
+      <stop offset="100%" stop-color="#D7CBB7"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D7CBB7"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <path d="M200 700 L200 240 C200 130, 600 130, 600 240 L600 700 Z" fill="#FAF6F0" fill-opacity="0.7" stroke="#C9A66B" stroke-width="0.75" stroke-opacity="0.25"/>
+      <ellipse cx="400" cy="652" rx="185" ry="22" fill="#2B2B2B" fill-opacity="0.09"/>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g >
+    <g >
+        <!-- Sculptural Gold & Pearl Top Frame -->
+        <path d="M265 405 Q400 375 535 405" fill="none" stroke="url(#goldGrad)" stroke-width="8" stroke-linecap="round"/>
+        <circle cx="382" cy="382" r="13" fill="#FAF6F0" stroke="url(#goldGrad)" stroke-width="3"/>
+        <circle cx="418" cy="382" r="13" fill="#FAF6F0" stroke="url(#goldGrad)" stroke-width="3"/>
+        <!-- Softly Ruched Pouch Body -->
+        <path d="M260 405 L540 405 C590 465, 595 575, 535 615 C485 642, 315 642, 265 615 C205 575, 210 465, 260 405 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.2" stroke-opacity="0.45"/>
+        <!-- Gentle Gathered Ruches -->
+        <path d="M320 405 Q290 500 315 620 M370 402 Q360 510 372 628 M430 402 Q440 510 428 628 M480 405 Q510 500 485 620" fill="none" stroke="url(#bagShadow)" stroke-width="1.8" stroke-opacity="0.45"/>
+        <text x="400" y="592" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="11" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+      </g>
+  </g>
+</svg>

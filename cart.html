@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Bag &amp; Checkout | Handle &amp; Hue — Carry Your Color</title>
+  <meta name="description" content="Review your Handle &amp; Hue shopping bag, apply privilege codes, and complete your boutique checkout.">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/parallax.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <!-- Top Announcement Bar -->
+  <div class="announcement-bar" role="region" aria-label="Atelier Announcement">
+    Complimentary Express Boutique Delivery Over $250 &bull; Welcome Privilege Code: <span>HUE10</span>
+  </div>
+
+  <!-- Sticky Navbar -->
+  <header class="site-header" id="siteHeader">
+    <div class="header-inner">
+      <div style="display:flex; align-items:center;">
+        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open navigation menu">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <line x1="3" y1="7" x2="21" y2="7"></line>
+            <line x1="3" y1="12" x2="17" y2="12"></line>
+            <line x1="3" y1="17" x2="21" y2="17"></line>
+          </svg>
+        </button>
+        <nav class="nav-primary" aria-label="Primary Navigation">
+          <a href="index.html" class="nav-link">Home</a>
+          <a href="shop.html" class="nav-link">Shop</a>
+          <a href="index.html#shop-by-color" class="nav-link">Collections</a>
+          <a href="about.html" class="nav-link">About</a>
+          <a href="contact.html" class="nav-link">Contact</a>
+        </nav>
+      </div>
+
+      <a href="index.html" class="brand-logo" aria-label="Handle &amp; Hue Home">
+        <img src="assets/logo.svg" alt="Handle &amp; Hue" width="240" height="46">
+      </a>
+
+      <div class="header-actions">
+        <button type="button" class="icon-btn" data-open-search aria-label="Search collection">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="7"></circle>
+            <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+          </svg>
+        </button>
+        <button type="button" class="icon-btn" data-open-wishlist aria-label="Open wishlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="badge-count" data-wishlist-count style="display:none;">0</span>
+        </button>
+        <a href="cart.html" class="icon-btn" aria-label="Shopping bag">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="badge-count" data-cart-count style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Header -->
+    <section class="page-hero-compact">
+      <div class="container reveal">
+        <nav class="breadcrumb" aria-label="Breadcrumb">
+          <a href="index.html">Home</a>
+          <span>/</span>
+          <span aria-current="page">Shopping Bag &amp; Checkout</span>
+        </nav>
+        <h1 class="section-title">Your Atelier <em>Bag</em></h1>
+        <p class="section-subtitle">
+          Every piece is wrapped in our blush linen dust bag and embossed ivory presentation box.
+        </p>
+      </div>
+    </section>
+
+    <section class="section section--ivory">
+      <div class="container">
+
+        <!-- Order Confirmation Receipt Banner (Hidden until order placed) -->
+        <div id="orderConfirmationBox" style="display:none; background:var(--color-blush-light); border:1.5px solid var(--color-gold); border-radius:var(--radius-md); padding:2.75rem; text-align:center; margin-bottom:3rem;"></div>
+
+        <div class="cart-layout">
+          <!-- Left Column: Bag Items & Checkout Form -->
+          <div>
+            <!-- Complimentary Express Delivery Progress Meter -->
+            <div class="shipping-meter reveal">
+              <p id="shippingMeterText" style="font-size:0.88rem;"></p>
+              <div class="shipping-meter-bar">
+                <div class="shipping-meter-fill" id="shippingMeterFill" style="width:0%;"></div>
+              </div>
+            </div>
+
+            <!-- Bag Items List -->
+            <div class="cart-table-card reveal" style="margin-bottom:2.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:1rem; border-bottom:var(--border-thin);">
+                <h2 style="font-size:1.55rem;">Selected Pieces</h2>
+                <a href="shop.html" class="link-arrow" style="font-size:0.7rem;">Continue Shopping</a>
+              </div>
+              <div id="cartPageItems">
+                <!-- Populated dynamically from localStorage by js/main.js -->
+              </div>
+            </div>
+
+            <!-- Boutique Checkout Form -->
+            <div class="cart-table-card reveal" id="checkoutSection">
+              <span class="eyebrow">Express Boutique Checkout</span>
+              <h2 style="font-size:1.85rem; margin-bottom:1.5rem;">Delivery &amp; Payment Details</h2>
+
+              <form id="checkoutForm">
+                <div class="form-grid">
+                  <div class="form-field">
+                    <label for="checkoutFirstName">First Name *</label>
+                    <input type="text" id="checkoutFirstName" class="form-input" placeholder="Camille" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutLastName">Last Name *</label>
+                    <input type="text" id="checkoutLastName" class="form-input" placeholder="Laurent" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutEmail">Email Address *</label>
+                    <input type="email" id="checkoutEmail" class="form-input" placeholder="camille@example.com" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutPhone">Phone / WhatsApp *</label>
+                    <input type="tel" id="checkoutPhone" class="form-input" placeholder="+1 (555) 019-2834" required>
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label for="checkoutAddress">Street Address &amp; Suite *</label>
+                    <input type="text" id="checkoutAddress" class="form-input" placeholder="24 Rue du Faubourg Saint-Honoré, Apt 4B" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutCity">City *</label>
+                    <input type="text" id="checkoutCity" class="form-input" placeholder="Paris / New York" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutPostal">Postal / ZIP Code *</label>
+                    <input type="text" id="checkoutPostal" class="form-input" placeholder="10012" required>
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label for="checkoutGiftNote">Complimentary Gift Note or Monogram Initials (Optional)</label>
+                    <input type="text" id="checkoutGiftNote" class="form-input" placeholder="e.g., Monogram 'C.L.' in Champagne Gold foil">
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label for="checkoutPayment">Payment Method</label>
+                    <select id="checkoutPayment" class="form-input">
+                      <option value="card">Credit / Debit Card (Visa, Mastercard, Amex)</option>
+                      <option value="applepay">Apple Pay / Express Wallet</option>
+                      <option value="cod">Boutique Courier Cash on Delivery</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">
+                  Complete Atelier Order
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right Column: Sticky Order Summary -->
+          <aside class="order-summary-card reveal">
+            <span class="eyebrow">Atelier Summary</span>
+            <h2 style="font-size:1.75rem; margin-bottom:1.25rem;">Order <em>Summary</em></h2>
+
+            <div class="summary-line">
+              <span>Bag Subtotal</span>
+              <strong id="summarySubtotal">$0</strong>
+            </div>
+
+            <div class="summary-line" id="summaryDiscountRow" style="display:none; color:var(--color-gold-dark);">
+              <span>Privilege Discount (10%)</span>
+              <strong id="summaryDiscount">-$0</strong>
+            </div>
+
+            <div class="summary-line">
+              <span>Courier Delivery</span>
+              <strong id="summaryShipping">Complimentary</strong>
+            </div>
+
+            <div class="summary-line">
+              <span>Gift Presentation &amp; Dust Bag</span>
+              <strong>Complimentary</strong>
+            </div>
+
+            <div style="margin: 1rem 0;">
+              <label for="shippingMethodSelect" style="display:block; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; margin-bottom:0.4rem;">Delivery Tier</label>
+              <select id="shippingMethodSelect" class="form-input" style="width:100%; padding:0.6rem 0.85rem; font-size:0.84rem;">
+                <option value="0">Standard Boutique Courier (3–5 Days) — Complimentary</option>
+                <option value="25">Priority Overnight Air Courier (Next Day) — $25</option>
+              </select>
+            </div>
+
+            <!-- Privilege / Promo Code Form -->
+            <form class="promo-row" id="promoCodeForm">
+              <label for="promoCodeInput" class="sr-only">Privilege Code</label>
+              <input type="text" id="promoCodeInput" class="form-input" style="flex:1; padding:0.65rem 0.85rem; font-size:0.84rem;" placeholder="Code (Try HUE10)">
+              <button type="submit" class="btn btn-outline" style="padding:0.65rem 1.15rem; font-size:0.72rem;">Apply</button>
+            </form>
+
+            <div class="summary-line summary-line--total">
+              <span>Estimated Total</span>
+              <span id="summaryTotal">$0</span>
+            </div>
+
+            <p style="font-size:0.78rem; color:var(--color-charcoal-muted); margin-top:1.15rem; line-height:1.6;">
+              &#10022; 30-Day Complimentary Returns &amp; Exchanges<br>
+              &#10022; 2-Year Atelier Hardware &amp; Leather Warranty
+            </p>
+          </aside>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Shared Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" aria-label="Handle &amp; Hue Home">
+            <img src="assets/logo-light.svg" alt="Handle &amp; Hue" width="220" height="42">
+          </a>
+          <p>
+            Modern luxury ladies&rsquo; bags crafted in small batches from full-grain Italian leather. Designed around architectural handles and poetic hues. <em>Carry your color.</em>
+          </p>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Silhouettes</h3>
+          <ul class="footer-links">
+            <li><a href="shop.html?category=Totes">Structured Totes</a></li>
+            <li><a href="shop.html?category=Handbags">Top-Handle Handbags</a></li>
+            <li><a href="shop.html?category=Crossbody">Crossbody Bags</a></li>
+            <li><a href="shop.html?category=Clutches">Evening Clutches</a></li>
+            <li><a href="shop.html?category=Backpacks">City Backpacks</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Signature Hues</h3>
+          <ul class="footer-links">
+            <li><a href="shop.html?color=Blush%20Pink">Blush Pink</a></li>
+            <li><a href="shop.html?color=Warm%20Ivory">Warm Ivory</a></li>
+            <li><a href="shop.html?color=Champagne%20Gold">Champagne Gold</a></li>
+            <li><a href="shop.html?color=Sage%20Mist">Sage Mist</a></li>
+            <li><a href="shop.html?color=Terracotta">Terracotta Clay</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Boutique &amp; Care</h3>
+          <ul class="footer-links">
+            <li><a href="about.html">The Handle &amp; Hue Story</a></li>
+            <li><a href="contact.html">Client Concierge</a></li>
+            <li><a href="cart.html">Shopping Bag &amp; Checkout</a></li>
+            <li><a href="mailto:concierge@handleandhue.com">concierge@handleandhue.com</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Handle &amp; Hue Atelier. All Rights Reserved. Carry your color.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Global Drawers -->
+  <div class="drawer-backdrop" id="drawerBackdrop" aria-hidden="true"></div>
+
+  <aside class="mobile-nav-drawer" id="mobileNavDrawer" aria-label="Mobile Navigation" aria-hidden="true">
+    <div>
+      <div class="drawer-header">
+        <img src="assets/logo.svg" alt="Handle &amp; Hue" width="170" height="32">
+        <button type="button" class="icon-btn" data-close-drawer aria-label="Close menu">&times;</button>
+      </div>
+      <nav class="mobile-nav-list">
+        <a href="index.html">Home <span>&rarr;</span></a>
+        <a href="shop.html">Shop All <span>&rarr;</span></a>
+        <a href="about.html">Our Story <span>&rarr;</span></a>
+        <a href="contact.html">Concierge <span>&rarr;</span></a>
+        <a href="cart.html">Shopping Bag <span>&rarr;</span></a>
+      </nav>
+    </div>
+  </aside>
+
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-label="Search Products" aria-hidden="true">
+    <div class="search-overlay-inner">
+      <form action="shop.html" method="get" class="search-form-row">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/></svg>
+        <input type="search" name="search" id="globalSearchInput" placeholder="Search silhouettes, categories, or hues..." autocomplete="off">
+        <button type="button" class="icon-btn" data-close-drawer aria-label="Close search">&times;</button>
+      </form>
+      <div class="search-results-preview" id="globalSearchPreview"></div>
+    </div>
+  </div>
+
+  <aside class="side-drawer" id="wishlistDrawer" aria-label="Saved Wishlist" aria-hidden="true">
+    <div class="side-drawer-header">
+      <h2 class="side-drawer-title">Your Wishlist</h2>
+      <button type="button" class="icon-btn" data-close-drawer aria-label="Close wishlist">&times;</button>
+    </div>
+    <div class="side-drawer-body" id="wishlistDrawerBody"></div>
+    <div class="side-drawer-footer">
+      <a href="shop.html" class="btn btn-outline" style="width:100%;">Explore All Pieces</a>
+    </div>
+  </aside>
+
+  <aside class="side-drawer" id="cartDrawer" aria-label="Shopping Bag" aria-hidden="true">
+    <div class="side-drawer-header">
+      <h2 class="side-drawer-title">Shopping Bag</h2>
+      <button type="button" class="icon-btn" data-close-drawer aria-label="Close bag">&times;</button>
+    </div>
+    <div class="side-drawer-body" id="cartDrawerBody"></div>
+    <div class="side-drawer-footer">
+      <div style="display:flex; justify-content:space-between; margin-bottom:1rem; font-size:1.05rem;">
+        <span>Subtotal</span>
+        <strong id="cartDrawerSubtotal">$0</strong>
+      </div>
+      <a href="cart.html" class="btn btn-primary" style="width:100%;">View Bag &amp; Checkout</a>
+    </div>
+  </aside>
+
+  <script src="js/products.js"></script>
+  <script src="js/parallax.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" width="800" height="900" role="img" aria-label="The Solène East-West Tote">
+  <!-- REPLACE WITH REAL STUDIO PRODUCT PHOTO: Swap this SVG path in js/products.js with your 800x900 .jpg or .webp product image -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF6F0"/>
+      <stop offset="55%" stop-color="#F2EAE0"/>
+      <stop offset="100%" stop-color="#EFE5DC"/>
+    </linearGradient>
+    <linearGradient id="bagBody" x1="15%" y1="10%" x2="85%" y2="90%">
+      <stop offset="0%" stop-color="#F6F0E4"/>
+      <stop offset="65%" stop-color="#E8DEC9"/>
+      <stop offset="100%" stop-color="#D4C7AE"/>
+    </linearGradient>
+    <linearGradient id="bagAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8DEC9"/>
+      <stop offset="100%" stop-color="#D4C7AE"/>
+    </linearGradient>
+    <linearGradient id="bagShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#D4C7AE"/>
+      <stop offset="100%" stop-color="#2B2B2B"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E6CFA1"/>
+      <stop offset="45%" stop-color="#C9A66B"/>
+      <stop offset="100%" stop-color="#9A7840"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="900" fill="url(#bgGrad)"/>
+  
+      <circle cx="400" cy="440" r="290" fill="#F4D9D0" fill-opacity="0.28" stroke="#C9A66B" stroke-width="1" stroke-dasharray="6 4"/>
+      <text x="400" y="120" text-anchor="middle" font-family="'Jost', sans-serif" font-size="13" letter-spacing="0.3em" fill="#C9A66B">ARTISANAL HARDWARE &amp; FULL-GRAIN CALFSKIN</text>
+    
+  <ellipse cx="400" cy="652" rx="170" ry="18" fill="#2B2B2B" fill-opacity="0.12"/>
+  <g transform="translate(-260, -210) scale(1.65)">
+    <g >
+        <!-- Slender Dual Handles -->
+        <path d="M300 340 C300 185, 500 185, 500 340" fill="none" stroke="url(#bagAccent)" stroke-width="13" stroke-linecap="round"/>
+        <!-- East-West Horizontal Body -->
+        <path d="M185 335 L615 335 L590 615 C588 634, 570 646, 548 646 L252 646 C230 646, 212 634, 210 615 Z" fill="url(#bagBody)" stroke="#C9A66B" stroke-width="1.3" stroke-opacity="0.5"/>
+        <!-- Belted Strap Detail -->
+        <rect x="195" y="385" width="410" height="18" rx="4" fill="url(#bagAccent)" stroke="#C9A66B" stroke-width="0.8"/>
+        <!-- Vertical Strap Extensions & Gold Buckles -->
+        <rect x="292" y="335" width="16" height="125" rx="4" fill="url(#bagAccent)"/>
+        <rect x="492" y="335" width="16" height="125" rx="4" fill="url(#bagAccent)"/>
+        <rect x="287" y="378" width="26" height="32" rx="4" fill="none" stroke="url(#goldGrad)" stroke-width="4.5"/>
+        <rect x="487" y="378" width="26" height="32" rx="4" fill="none" stroke="url(#goldGrad)" stroke-width="4.5"/>
+        <text x="400" y="510" text-anchor="middle" font-family="'Cormorant Garamond', Georgia, serif" font-size="12" letter-spacing="0.28em" fill="#C9A66B">HANDLE &amp; HUE</text>
+      </g>
+  </g>
+</svg>

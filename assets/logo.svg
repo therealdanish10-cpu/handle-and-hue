@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 60" width="320" height="60" role="img" aria-label="Handle &amp; Hue — Carry your color">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&amp;family=Jost:wght@300;400&amp;display=swap');
+      .brand-word {
+        font-family: 'Cormorant Garamond', 'Playfair Display', 'Didot', Georgia, serif;
+        font-size: 31px;
+        font-weight: 500;
+        fill: #2B2B2B;
+        letter-spacing: 0.14em;
+      }
+      .brand-amp {
+        font-family: 'Cormorant Garamond', 'Playfair Display', 'Didot', Georgia, serif;
+        font-size: 33px;
+        font-style: italic;
+        font-weight: 400;
+        fill: #C9A66B;
+      }
+      .brand-sub {
+        font-family: 'Jost', 'Helvetica Neue', sans-serif;
+        font-size: 7.5px;
+        font-weight: 400;
+        fill: #C9A66B;
+        letter-spacing: 0.38em;
+      }
+    </style>
+  </defs>
+  <!-- Wordmark: HANDLE & HUE -->
+  <text x="160" y="34" text-anchor="middle" class="brand-word">
+    HANDLE <tspan class="brand-amp" dx="2" dy="1">&amp;</tspan><tspan dx="6" dy="-1">HUE</tspan>
+  </text>
+  <!-- Subtle Champagne Gold ornamental line and tagline -->
+  <line x1="78" y1="47" x2="108" y2="47" stroke="#C9A66B" stroke-width="0.75" stroke-opacity="0.65" />
+  <text x="160" y="50" text-anchor="middle" class="brand-sub">ATELIER</text>
+  <line x1="212" y1="47" x2="242" y2="47" stroke="#C9A66B" stroke-width="0.75" stroke-opacity="0.65" />
+</svg>
