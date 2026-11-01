@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shopping Bag &amp; Checkout | Handle &amp; Hue — Carry Your Color</title>
-  <meta name="description" content="Review your Handle &amp; Hue shopping bag, apply privilege codes, and complete your boutique checkout.">
+  <meta name="description" content="Review your Handle &amp; Hue shopping bag in PKR, apply privilege codes HUE10 or WELCOME10, and complete your Pakistan nationwide checkout.">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/parallax.css">
@@ -14,7 +14,7 @@
 
   <!-- Top Announcement Bar -->
   <div class="announcement-bar" role="region" aria-label="Atelier Announcement">
-    Complimentary Express Boutique Delivery Over $250 &bull; Welcome Privilege Code: <span>HUE10</span>
+    Free Nationwide Delivery Across Pakistan Over Rs. 10,000 &bull; Welcome Privilege Code: <span>HUE10</span>
   </div>
 
   <!-- Sticky Navbar -->
@@ -77,7 +77,7 @@
         </nav>
         <h1 class="section-title">Your Atelier <em>Bag</em></h1>
         <p class="section-subtitle">
-          Every piece is wrapped in our blush linen dust bag and embossed ivory presentation box.
+          Every piece is wrapped in our blush linen dust bag and embossed ivory presentation box. Nationwide delivery across Pakistan in 3 to 5 working days.
         </p>
       </div>
     </section>
@@ -91,7 +91,7 @@
         <div class="cart-layout">
           <!-- Left Column: Bag Items & Checkout Form -->
           <div>
-            <!-- Complimentary Express Delivery Progress Meter -->
+            <!-- Free Nationwide Delivery Progress Meter (Threshold: Rs. 10,000) -->
             <div class="shipping-meter reveal">
               <p id="shippingMeterText" style="font-size:0.88rem;"></p>
               <div class="shipping-meter-bar">
@@ -110,57 +110,65 @@
               </div>
             </div>
 
-            <!-- Boutique Checkout Form -->
+            <!-- Pakistan Boutique Checkout Form -->
             <div class="cart-table-card reveal" id="checkoutSection">
-              <span class="eyebrow">Express Boutique Checkout</span>
+              <span class="eyebrow">Nationwide Pakistan Checkout</span>
               <h2 style="font-size:1.85rem; margin-bottom:1.5rem;">Delivery &amp; Payment Details</h2>
 
               <form id="checkoutForm">
                 <div class="form-grid">
                   <div class="form-field">
-                    <label for="checkoutFirstName">First Name *</label>
-                    <input type="text" id="checkoutFirstName" class="form-input" placeholder="Camille" required>
+                    <label for="checkoutFullName">Full Name *</label>
+                    <input type="text" id="checkoutFullName" class="form-input" placeholder="e.g. Ayesha Siddiqui" required>
                   </div>
                   <div class="form-field">
-                    <label for="checkoutLastName">Last Name *</label>
-                    <input type="text" id="checkoutLastName" class="form-input" placeholder="Laurent" required>
-                  </div>
-                  <div class="form-field">
-                    <label for="checkoutEmail">Email Address *</label>
-                    <input type="email" id="checkoutEmail" class="form-input" placeholder="camille@example.com" required>
-                  </div>
-                  <div class="form-field">
-                    <label for="checkoutPhone">Phone / WhatsApp *</label>
-                    <input type="tel" id="checkoutPhone" class="form-input" placeholder="+1 (555) 019-2834" required>
-                  </div>
-                  <div class="form-field form-field--full">
-                    <label for="checkoutAddress">Street Address &amp; Suite *</label>
-                    <input type="text" id="checkoutAddress" class="form-input" placeholder="24 Rue du Faubourg Saint-Honoré, Apt 4B" required>
+                    <label for="checkoutPhone">Phone / WhatsApp Number *</label>
+                    <input type="tel" id="checkoutPhone" class="form-input" placeholder="+92 3XX XXXXXXX" required>
                   </div>
                   <div class="form-field">
                     <label for="checkoutCity">City *</label>
-                    <input type="text" id="checkoutCity" class="form-input" placeholder="Paris / New York" required>
+                    <input type="text" id="checkoutCity" class="form-input" placeholder="e.g. Lahore, Karachi, Islamabad" required>
                   </div>
                   <div class="form-field">
-                    <label for="checkoutPostal">Postal / ZIP Code *</label>
-                    <input type="text" id="checkoutPostal" class="form-input" placeholder="10012" required>
-                  </div>
-                  <div class="form-field form-field--full">
-                    <label for="checkoutGiftNote">Complimentary Gift Note or Monogram Initials (Optional)</label>
-                    <input type="text" id="checkoutGiftNote" class="form-input" placeholder="e.g., Monogram 'C.L.' in Champagne Gold foil">
-                  </div>
-                  <div class="form-field form-field--full">
-                    <label for="checkoutPayment">Payment Method</label>
-                    <select id="checkoutPayment" class="form-input">
-                      <option value="card">Credit / Debit Card (Visa, Mastercard, Amex)</option>
-                      <option value="applepay">Apple Pay / Express Wallet</option>
-                      <option value="cod">Boutique Courier Cash on Delivery</option>
+                    <label for="checkoutProvince">Province / Territory *</label>
+                    <select id="checkoutProvince" class="form-input" required>
+                      <option value="Punjab">Punjab</option>
+                      <option value="Sindh">Sindh</option>
+                      <option value="Khyber Pakhtunkhwa">Khyber Pakhtunkhwa</option>
+                      <option value="Balochistan">Balochistan</option>
+                      <option value="Islamabad Capital Territory">Islamabad Capital Territory</option>
+                      <option value="Azad Kashmir">Azad Kashmir</option>
+                      <option value="Gilgit-Baltistan">Gilgit-Baltistan</option>
                     </select>
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label for="checkoutAddress">Full Delivery Address *</label>
+                    <input type="text" id="checkoutAddress" class="form-input" placeholder="House / Flat No., Street, Block / Sector, Area &amp; Nearest Landmark" required>
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutEmail">Email Address (Optional for Order Receipt)</label>
+                    <input type="email" id="checkoutEmail" class="form-input" placeholder="ayesha@example.com">
+                  </div>
+                  <div class="form-field">
+                    <label for="checkoutGiftNote">Complimentary Gift Note or Monogram (Optional)</label>
+                    <input type="text" id="checkoutGiftNote" class="form-input" placeholder="e.g. Monogram 'A.S.' in Champagne Gold">
+                  </div>
+                  <div class="form-field form-field--full">
+                    <label for="checkoutPayment">Payment Method *</label>
+                    <select id="checkoutPayment" class="form-input">
+                      <option value="cod" selected>Cash on Delivery (COD) — Default</option>
+                      <option value="bank">Bank Transfer (Meezan / Allied / HBL)</option>
+                      <option value="jazzcash">JazzCash Mobile Account</option>
+                      <option value="easypaisa">Easypaisa Mobile Account</option>
+                    </select>
+                    <p id="checkoutPaymentNote" style="margin-top:0.55rem; font-size:0.83rem; color:var(--color-charcoal-soft); background:var(--color-blush-light); padding:0.75rem 1rem; border-radius:var(--radius-sm); border:1px solid var(--color-gold-border);">
+                      Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. Our concierge team will call or message you on WhatsApp to confirm your order before dispatch.
+                    </p>
                   </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">
-                  Complete Atelier Order
+                  Place Atelier Order
                 </button>
               </form>
             </div>
@@ -173,47 +181,40 @@
 
             <div class="summary-line">
               <span>Bag Subtotal</span>
-              <strong id="summarySubtotal">$0</strong>
+              <strong id="summarySubtotal">Rs. 0</strong>
             </div>
 
             <div class="summary-line" id="summaryDiscountRow" style="display:none; color:var(--color-gold-dark);">
               <span>Privilege Discount (10%)</span>
-              <strong id="summaryDiscount">-$0</strong>
+              <strong id="summaryDiscount">-Rs. 0</strong>
             </div>
 
             <div class="summary-line">
-              <span>Courier Delivery</span>
-              <strong id="summaryShipping">Complimentary</strong>
+              <span>Nationwide Shipping</span>
+              <strong id="summaryShipping">Rs. 250</strong>
             </div>
 
             <div class="summary-line">
-              <span>Gift Presentation &amp; Dust Bag</span>
+              <span>Gift Box &amp; Blush Linen Dust Bag</span>
               <strong>Complimentary</strong>
-            </div>
-
-            <div style="margin: 1rem 0;">
-              <label for="shippingMethodSelect" style="display:block; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; margin-bottom:0.4rem;">Delivery Tier</label>
-              <select id="shippingMethodSelect" class="form-input" style="width:100%; padding:0.6rem 0.85rem; font-size:0.84rem;">
-                <option value="0">Standard Boutique Courier (3–5 Days) — Complimentary</option>
-                <option value="25">Priority Overnight Air Courier (Next Day) — $25</option>
-              </select>
             </div>
 
             <!-- Privilege / Promo Code Form -->
             <form class="promo-row" id="promoCodeForm">
               <label for="promoCodeInput" class="sr-only">Privilege Code</label>
-              <input type="text" id="promoCodeInput" class="form-input" style="flex:1; padding:0.65rem 0.85rem; font-size:0.84rem;" placeholder="Code (Try HUE10)">
+              <input type="text" id="promoCodeInput" class="form-input" style="flex:1; padding:0.65rem 0.85rem; font-size:0.84rem;" placeholder="Code (HUE10 or WELCOME10)">
               <button type="submit" class="btn btn-outline" style="padding:0.65rem 1.15rem; font-size:0.72rem;">Apply</button>
             </form>
 
             <div class="summary-line summary-line--total">
-              <span>Estimated Total</span>
-              <span id="summaryTotal">$0</span>
+              <span>Order Total</span>
+              <span id="summaryTotal">Rs. 0</span>
             </div>
 
-            <p style="font-size:0.78rem; color:var(--color-charcoal-muted); margin-top:1.15rem; line-height:1.6;">
-              &#10022; 30-Day Complimentary Returns &amp; Exchanges<br>
-              &#10022; 2-Year Atelier Hardware &amp; Leather Warranty
+            <p style="font-size:0.78rem; color:var(--color-charcoal-muted); margin-top:1.15rem; line-height:1.65;">
+              &#10022; Nationwide delivery across Pakistan in 3 to 5 working days<br>
+              &#10022; Free shipping on orders of Rs. 10,000 or above (flat Rs. 250 below threshold)<br>
+              &#10022; Hassle-free 14-day easy exchange policy
             </p>
           </aside>
         </div>
@@ -231,8 +232,20 @@
             <img src="assets/logo-light.svg" alt="Handle &amp; Hue" width="220" height="42">
           </a>
           <p>
-            Modern luxury ladies&rsquo; bags crafted in small batches from full-grain Italian leather. Designed around architectural handles and poetic hues. <em>Carry your color.</em>
+            Modern luxury ladies&rsquo; bags crafted in small batches from full-grain leather. Nationwide delivery across Pakistan in 3 to 5 working days. <em>Carry your color.</em>
           </p>
+          <div class="footer-socials">
+            <a href="https://instagram.com" target="_blank" rel="noopener" class="footer-social-link" aria-label="Instagram">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+            </a>
+            <a href="https://pinterest.com" target="_blank" rel="noopener" class="footer-social-link" aria-label="Pinterest">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="10"/><path d="M8 20l4-9m0 0a3 3 0 1 0 4 3c0 2-1.5 3-3 3"/></svg>
+            </a>
+            <!-- REPLACE WITH YOUR REAL PAKISTAN WHATSAPP NUMBER -->
+            <a href="https://wa.me/923001234567" target="_blank" rel="noopener" class="footer-social-link" aria-label="WhatsApp Concierge">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </a>
+          </div>
         </div>
 
         <div>
@@ -263,13 +276,20 @@
             <li><a href="about.html">The Handle &amp; Hue Story</a></li>
             <li><a href="contact.html">Client Concierge</a></li>
             <li><a href="cart.html">Shopping Bag &amp; Checkout</a></li>
+            <li><a href="contact.html#faq">Nationwide Shipping &amp; Easy Exchange</a></li>
             <li><a href="mailto:concierge@handleandhue.com">concierge@handleandhue.com</a></li>
           </ul>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>&copy; 2026 Handle &amp; Hue Atelier. All Rights Reserved. Carry your color.</p>
+        <p>&copy; 2026 Handle &amp; Hue Atelier Pakistan. All Rights Reserved. Carry your color.</p>
+        <div class="payment-pills">
+          <span class="payment-pill">Cash on Delivery</span>
+          <span class="payment-pill">Bank Transfer</span>
+          <span class="payment-pill">JazzCash</span>
+          <span class="payment-pill">Easypaisa</span>
+        </div>
       </div>
     </div>
   </footer>
@@ -290,6 +310,12 @@
         <a href="contact.html">Concierge <span>&rarr;</span></a>
         <a href="cart.html">Shopping Bag <span>&rarr;</span></a>
       </nav>
+    </div>
+    <div class="mobile-drawer-footer">
+      <p style="margin-bottom:0.4rem;"><strong>Pakistan Atelier Concierge</strong></p>
+      <!-- REPLACE WITH YOUR REAL PAKISTAN WHATSAPP NUMBER -->
+      <p>WhatsApp: +92 300 1234567</p>
+      <p>concierge@handleandhue.com</p>
     </div>
   </aside>
 
@@ -324,7 +350,7 @@
     <div class="side-drawer-footer">
       <div style="display:flex; justify-content:space-between; margin-bottom:1rem; font-size:1.05rem;">
         <span>Subtotal</span>
-        <strong id="cartDrawerSubtotal">$0</strong>
+        <strong id="cartDrawerSubtotal">Rs. 0</strong>
       </div>
       <a href="cart.html" class="btn btn-primary" style="width:100%;">View Bag &amp; Checkout</a>
     </div>

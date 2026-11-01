@@ -21,7 +21,7 @@
 
   // Listen for changes in user motion preference
   if (reducedMotionQuery.addEventListener) {
-    reducedMotionQuery.addEventListener('change', (e) => {
+    reducedMotionQuery.addEventListener('change', function (e) {
       isReducedMotion = e.matches;
       if (isReducedMotion) resetParallaxTransforms();
     });
@@ -47,8 +47,8 @@
     if (!nodes.length) return;
 
     const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
+      function (entries) {
+        entries.forEach(function (entry) {
           if (entry.isIntersecting) {
             activeParallaxNodes.add(entry.target);
           } else {
@@ -63,7 +63,7 @@
       }
     );
 
-    nodes.forEach((node) => {
+    nodes.forEach(function (node) {
       let speed = parseFloat(node.getAttribute('data-parallax-speed'));
       if (isNaN(speed)) {
         if (node.classList.contains('parallax-hero__bg')) {
@@ -87,7 +87,7 @@
    * Reset transforms when mobile or prefers-reduced-motion is active
    */
   function resetParallaxTransforms() {
-    parallaxItems.forEach((node) => {
+    parallaxItems.forEach(function (node) {
       node.style.transform = 'translate3d(0, 0, 0)';
     });
   }
@@ -106,8 +106,9 @@
     const viewportHeight = window.innerHeight;
     const scrollY = window.pageYOffset || document.documentElement.scrollTop;
 
-    parallaxItems.forEach((node) => {
-      const container = node.closest('.parallax-hero, .parallax-banner, .section') || node.parentElement;
+    parallaxItems.forEach(function (node) {
+      const container =
+        node.closest('.parallax-hero, .parallax-banner, .section') || node.parentElement;
       if (!container) return;
 
       const rect = container.getBoundingClientRect();
@@ -120,17 +121,18 @@
       if (node.classList.contains('parallax-hero__bg')) {
         // Classic hero parallax: shift downward at a fraction of scrollY
         const offset = Math.round(scrollY * speed * 10) / 10;
-        node.style.transform = `translate3d(0, ${offset}px, 0) scale(1.04)`;
+        node.style.transform = 'translate3d(0, ' + offset + 'px, 0) scale(1.04)';
       } else {
         // Relative to viewport center for banners and floating multi-layer shapes
-        const centerOffset = (rect.top + rect.height / 2) - viewportHeight / 2;
+        const centerOffset = rect.top + rect.height / 2 - viewportHeight / 2;
         const translateY = Math.round(-centerOffset * speed * 10) / 10;
 
         if (rotationAttr !== 0) {
-          const deg = Math.round((centerOffset * rotationAttr * 0.05) * 10) / 10;
-          node.style.transform = `translate3d(0, ${translateY}px, 0) rotate(${deg}deg)`;
+          const deg = Math.round(centerOffset * rotationAttr * 0.05 * 10) / 10;
+          node.style.transform =
+            'translate3d(0, ' + translateY + 'px, 0) rotate(' + deg + 'deg)';
         } else {
-          node.style.transform = `translate3d(0, ${translateY}px, 0)`;
+          node.style.transform = 'translate3d(0, ' + translateY + 'px, 0)';
         }
       }
     });
@@ -146,7 +148,7 @@
   window.addEventListener('scroll', requestTick, { passive: true });
   window.addEventListener(
     'resize',
-    () => {
+    function () {
       isMobileViewport = window.innerWidth <= 768;
       requestTick();
     },
@@ -163,14 +165,16 @@
 
   function setupRevealObserver() {
     if (isReducedMotion || !('IntersectionObserver' in window)) {
-      document.querySelectorAll('.reveal').forEach((el) => el.classList.add('is-visible'));
+      document.querySelectorAll('.reveal').forEach(function (el) {
+        el.classList.add('is-visible');
+      });
       return;
     }
 
     if (!revealObserver) {
       revealObserver = new IntersectionObserver(
-        (entries, obs) => {
-          entries.forEach((entry) => {
+        function (entries, obs) {
+          entries.forEach(function (entry) {
             if (entry.isIntersecting) {
               entry.target.classList.add('is-visible');
               obs.unobserve(entry.target);
@@ -185,7 +189,7 @@
       );
     }
 
-    document.querySelectorAll('.reveal:not(.is-visible)').forEach((el) => {
+    document.querySelectorAll('.reveal:not(.is-visible)').forEach(function (el) {
       revealObserver.observe(el);
     });
   }
@@ -193,7 +197,7 @@
   // Expose globally so dynamically rendered product grids can register reveals
   window.observeReveals = setupRevealObserver;
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', function () {
     initParallaxTargets();
     setupRevealObserver();
   });

@@ -1,7 +1,11 @@
 /**
  * ============================================================================
- * HANDLE & HUE — Product Catalog & Brand Hue Data (js/products.js)
+ * HANDLE & HUE — Product Catalog, Currency Formatter & Brand Hue Data (js/products.js)
  * ============================================================================
+ * CURRENCY FORMATTER (Single Source of Truth):
+ * Use `window.formatPKR(amount)` everywhere across the site to format prices
+ * as "Rs. 12,500" with thousands separators and no decimals.
+ *
  * HOW TO REPLACE PLACEHOLDER IMAGES WITH REAL PHOTOS:
  * Each product below has an `images` object with 4 paths:
  *   - primary:   Main studio front view (800x900 recommended, .jpg or .webp)
@@ -12,6 +16,17 @@
  * file extension/name below.
  * ============================================================================
  */
+
+window.formatPKR = function formatPKR(amount) {
+  const numeric = Math.round(Number(amount) || 0);
+  const formatted = numeric.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return 'Rs. ' + formatted;
+};
+
+window.HANDLE_HUE_SHIPPING_CONFIG = {
+  freeShippingThreshold: 10000, // Free shipping on orders of Rs. 10,000 or above
+  flatShippingFee: 250          // Flat nationwide shipping fee of Rs. 250 below threshold
+};
 
 window.HANDLE_HUE_COLORS = [
   {
@@ -32,7 +47,7 @@ window.HANDLE_HUE_COLORS = [
     key: 'Champagne Gold',
     name: 'Champagne Gold',
     hex: '#C9A66B',
-    poetic: 'Luminous brushed metallic finish for day-to-evening radiance.',
+    poetic: 'Luminous brushed metallic finish for festive and evening radiance.',
     borderHex: '#B08D52'
   },
   {
@@ -46,14 +61,14 @@ window.HANDLE_HUE_COLORS = [
     key: 'Sage Mist',
     name: 'Sage Mist',
     hex: '#C5CEBE',
-    poetic: 'Botanical celadon grey inspired by Mediterranean olive groves.',
+    poetic: 'Botanical celadon grey inspired by serene garden courtyards.',
     borderHex: '#A7B29F'
   },
   {
     key: 'Terracotta',
     name: 'Terracotta',
     hex: '#C98A74',
-    poetic: 'Sun-baked Sienna clay with rich artisanal patina.',
+    poetic: 'Sun-baked clay with rich artisanal patina.',
     borderHex: '#B2735D'
   },
   {
@@ -90,7 +105,7 @@ window.HANDLE_HUE_CATEGORIES = [
   {
     id: 'Clutches',
     name: 'Clutches',
-    subtitle: 'Evening & occasion icons',
+    subtitle: 'Evening & festive icons',
     count: 3,
     image: 'assets/images/categories/cat-clutches.svg'
   },
@@ -103,13 +118,22 @@ window.HANDLE_HUE_CATEGORIES = [
   }
 ];
 
+/* ============================================================================
+   PRODUCT CATALOG (PKR Pricing for Pakistan Market)
+   Price Ranges:
+   - Clutches:       Rs. 3,500 – Rs. 7,500
+   - Crossbody:      Rs. 5,500 – Rs. 11,000
+   - Handbags/Totes: Rs. 8,000 – Rs. 18,000
+   - Backpacks:      Rs. 7,000 – Rs. 14,000
+   ============================================================================ */
 window.HANDLE_HUE_PRODUCTS = [
   {
     id: 'aurelia-tote',
     sku: 'HH-TOT-001',
     name: 'The Aurelia Structured Tote',
-    subtitle: 'Winged Italian Calfskin Carryall',
-    price: 340,
+    subtitle: 'Winged Calfskin Carryall',
+    price: 15500,
+    compareAtPrice: 17500,
     category: 'Totes',
     primaryColor: 'Blush Pink',
     colors: [
@@ -127,8 +151,8 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '24 cm top handle drop',
     weight: '0.78 kg',
     capacity: 'Fits 14" laptop, diary, cosmetics pouch & water bottle',
-    materials: '100% Full-grain Italian pebbled calfskin, organic cotton-suede lining, 18k brushed champagne gold-plated brass turn-lock.',
-    description: 'Our signature silhouette. The Aurelia Structured Tote balances architectural winged gussets with hand-rolled tubular handles and a belted champagne gold turn-lock. Designed to transition effortlessly from morning studio meetings to twilight dinners.',
+    materials: 'Full-grain pebbled leather finish, organic cotton-suede lining, 18k brushed champagne gold-plated brass turn-lock.',
+    description: 'Our signature silhouette. The Aurelia Structured Tote balances architectural winged gussets with hand-rolled tubular handles and a belted champagne gold turn-lock. Designed to transition effortlessly from morning office meetings to evening dinners.',
     images: {
       primary: 'assets/images/products/aurelia-tote-primary.svg',
       secondary: 'assets/images/products/aurelia-tote-hover.svg',
@@ -141,7 +165,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-HBG-002',
     name: 'The Séraphine Arch Handbag',
     subtitle: 'Sculptural Half-Moon Top Handle',
-    price: 295,
+    price: 12500,
+    compareAtPrice: null,
     category: 'Handbags',
     primaryColor: 'Warm Ivory',
     colors: [
@@ -157,9 +182,9 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '26 × 21 × 10 cm (10.2" × 8.3" × 3.9")',
     strapDrop: '12 cm handle | 52 cm detachable crossbody strap',
     weight: '0.54 kg',
-    capacity: 'Fits all iPhone Pro Max sizes, cardholder, keys & compact',
-    materials: 'Smooth vegetable-tanned box calfskin with hand-painted edges and custom circular champagne gold rings.',
-    description: 'Inspired by neoclassical gallery arches, The Séraphine features a sweeping dome silhouette crowned with a rigid sculptural handle and signature champagne gold medallion clasp.',
+    capacity: 'Fits all large smartphones, cardholder, keys & compact',
+    materials: 'Smooth structured calfskin with hand-painted edges and custom circular champagne gold rings.',
+    description: 'Inspired by classical gallery arches, The Séraphine features a sweeping dome silhouette crowned with a rigid sculptural handle and signature champagne gold medallion clasp.',
     images: {
       primary: 'assets/images/products/seraphine-handbag-primary.svg',
       secondary: 'assets/images/products/seraphine-handbag-hover.svg',
@@ -172,7 +197,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CRB-003',
     name: 'The Céleste Pleated Crossbody',
     subtitle: 'Softly Gathered Cloud Shoulder Bag',
-    price: 225,
+    price: 7800,
+    compareAtPrice: null,
     category: 'Crossbody',
     primaryColor: 'Champagne Gold',
     colors: [
@@ -189,8 +215,8 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '55 cm diamond-cut chain & leather comfort pad',
     weight: '0.42 kg',
     capacity: 'Fits smartphone, sunglasses, lip color & slim wallet',
-    materials: 'Supple nappa lambskin with artisan vertical pleating and detachable jewelry-grade champagne gold chain.',
-    description: 'Featherlight and poetic, The Céleste is crafted from butter-soft nappa leather gathered into soft pleats that catch the light at every angle.',
+    materials: 'Supple nappa leather finish with artisan vertical pleating and detachable jewelry-grade champagne gold chain.',
+    description: 'Featherlight and poetic, The Céleste is crafted from butter-soft pleated leather that catches the light at every angle — ideal for both daytime styling and festive evenings.',
     images: {
       primary: 'assets/images/products/celeste-crossbody-primary.svg',
       secondary: 'assets/images/products/celeste-crossbody-hover.svg',
@@ -203,7 +229,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CLT-004',
     name: 'The Lumière Evening Clutch',
     subtitle: 'Envelope Frame Clutch with Gold Bar',
-    price: 195,
+    price: 5200,
+    compareAtPrice: 6200,
     category: 'Clutches',
     primaryColor: 'Blush Pink',
     colors: [
@@ -219,9 +246,9 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '25 × 14 × 5 cm (9.8" × 5.5" × 2.0")',
     strapDrop: '48 cm hideaway snake chain',
     weight: '0.35 kg',
-    capacity: 'Fits phone, evening essentials & 4 interior card slots',
-    materials: 'Satin-buffed calfskin exterior, blush micro-suede lining, solid brushed brass bar hardware.',
-    description: 'Tailored geometry meets evening romance. The Lumière Clutch secures with an elongated champagne gold bar that doubles as a tactile jewelry accent in the palm of your hand.',
+    capacity: 'Fits phone, festive essentials & 4 interior card slots',
+    materials: 'Satin-buffed leather exterior, blush micro-suede lining, solid brushed brass bar hardware.',
+    description: 'Tailored geometry meets festive romance. The Lumière Clutch secures with an elongated champagne gold bar that doubles as a tactile jewelry accent for weddings and formal soirées.',
     images: {
       primary: 'assets/images/products/lumiere-clutch-primary.svg',
       secondary: 'assets/images/products/lumiere-clutch-hover.svg',
@@ -234,7 +261,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-BPK-005',
     name: 'The Valérie City Backpack',
     subtitle: 'Structured Leather Daypack',
-    price: 360,
+    price: 12800,
+    compareAtPrice: 14000,
     category: 'Backpacks',
     primaryColor: 'Deep Charcoal',
     colors: [
@@ -250,9 +278,9 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '33 × 27 × 14 cm (13" × 10.6" × 5.5")',
     strapDrop: '8 cm top handle | Adjustable 65–82 cm shoulder straps',
     weight: '0.82 kg',
-    capacity: 'Fits 13" MacBook Air/Pro, notebook, charger & umbrella',
-    materials: 'Scratch-resistant fine-grain calfskin with reinforced base studs and quick-release gold lock.',
-    description: 'Refined utility for the modern flâneuse. The Valérie replaces casual nylon with clean architectural leatherwork, a rolled top handle, and convertible straps.',
+    capacity: 'Fits 13" laptop, notebook, charger & daily essentials',
+    materials: 'Scratch-resistant fine-grain leather with reinforced base studs and quick-release gold lock.',
+    description: 'Refined utility for university, work, and travel. The Valérie replaces casual nylon with clean architectural leatherwork, a rolled top handle, and convertible straps.',
     images: {
       primary: 'assets/images/products/valerie-backpack-primary.svg',
       secondary: 'assets/images/products/valerie-backpack-hover.svg',
@@ -265,7 +293,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-TOT-006',
     name: 'The Solène East-West Tote',
     subtitle: 'Elongated Belted Gallery Tote',
-    price: 315,
+    price: 13800,
+    compareAtPrice: null,
     category: 'Totes',
     primaryColor: 'Warm Ivory',
     colors: [
@@ -282,8 +311,8 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '25 cm slender shoulder straps',
     weight: '0.68 kg',
     capacity: 'Fits 13" laptop horizontally, sunglasses case & wallet',
-    materials: 'Full-grain Italian calfskin with dual custom-cast champagne gold belt buckles.',
-    description: 'With its contemporary horizontal proportion and twin belted straps, The Solène brings effortless Milanese poise to everyday dressing.',
+    materials: 'Full-grain leather with dual custom-cast champagne gold belt buckles.',
+    description: 'With its contemporary horizontal proportion and twin belted straps, The Solène brings effortless poise to both eastern and western silhouettes.',
     images: {
       primary: 'assets/images/products/solene-tote-primary.svg',
       secondary: 'assets/images/products/solene-tote-hover.svg',
@@ -296,7 +325,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-HBG-007',
     name: 'The Camille Top-Handle Satchel',
     subtitle: 'Trapezoid Satchel with Clochette',
-    price: 325,
+    price: 14200,
+    compareAtPrice: 16000,
     category: 'Handbags',
     primaryColor: 'Sage Mist',
     colors: [
@@ -314,7 +344,7 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '10 cm top handle | 50 cm removable shoulder strap',
     weight: '0.64 kg',
     capacity: 'Three accordion compartments for organized daily carry',
-    materials: 'Supple grained calfskin, suede interior dividers, engraved lock plaque and leather key clochette.',
+    materials: 'Supple grained leather, suede interior dividers, engraved lock plaque and leather key clochette.',
     description: 'Timeless heirloom proportions in our calming Sage Mist hue. The Camille opens to three gusseted compartments that keep every essential in serene order.',
     images: {
       primary: 'assets/images/products/camille-handbag-primary.svg',
@@ -328,7 +358,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CRB-008',
     name: 'The Élodie Saddle Crossbody',
     subtitle: 'Equitation Curve Bag with Stirrup Ring',
-    price: 245,
+    price: 8900,
+    compareAtPrice: 10200,
     category: 'Crossbody',
     primaryColor: 'Terracotta',
     colors: [
@@ -344,9 +375,9 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '23 × 19 × 7.5 cm (9.1" × 7.5" × 3.0")',
     strapDrop: '46–56 cm 5-hole adjustable crossbody strap',
     weight: '0.49 kg',
-    capacity: 'Fits phone, passport, keys & compact mirror',
-    materials: 'Saddle-grade vegetable-tanned leather with contrast ecru stitching and oversized brushed gold ring.',
-    description: 'A celebration of equestrian heritage softened for the modern wardrobe. The Élodie’s organic curve and warm Terracotta hue add instant richness to linen and cashmere alike.',
+    capacity: 'Fits phone, wallet, keys & compact mirror',
+    materials: 'Saddle-grade smooth leather with contrast ecru stitching and oversized brushed gold ring.',
+    description: 'A celebration of equestrian heritage softened for the modern wardrobe. The Élodie’s organic curve and warm Terracotta hue add instant richness to lawn, linen, and winter knits alike.',
     images: {
       primary: 'assets/images/products/elodie-crossbody-primary.svg',
       secondary: 'assets/images/products/elodie-crossbody-hover.svg',
@@ -359,7 +390,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-HBG-009',
     name: 'The Margaux Knot Mini Handbag',
     subtitle: 'Crescent Hobo with Artisan Knots',
-    price: 265,
+    price: 9800,
+    compareAtPrice: null,
     category: 'Handbags',
     primaryColor: 'Dusty Mauve',
     colors: [
@@ -376,7 +408,7 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '14 cm sculptural wrist/arm carry',
     weight: '0.41 kg',
     capacity: 'Fits large smartphone, card case, keys & fragrance',
-    materials: 'Glove-soft Italian lambskin with hand-tied leather knots and solid gold-dipped cuff ferrules.',
+    materials: 'Glove-soft leather with hand-tied knots and solid gold-dipped cuff ferrules.',
     description: 'Intimate and tactile, The Margaux wraps a soft crescent silhouette in our romantic Dusty Mauve tone, finished with artisan knotted cuffs.',
     images: {
       primary: 'assets/images/products/margaux-handbag-primary.svg',
@@ -390,7 +422,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CLT-010',
     name: 'The Vivienne Box Clutch',
     subtitle: 'Leather-Wrapped Minaudière',
-    price: 210,
+    price: 6800,
+    compareAtPrice: 7500,
     category: 'Clutches',
     primaryColor: 'Champagne Gold',
     colors: [
@@ -406,9 +439,9 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '20 × 12 × 5.5 cm (7.9" × 4.7" × 2.2")',
     strapDrop: '52 cm tuck-in gold link chain',
     weight: '0.44 kg',
-    capacity: 'Fits iPhone Pro, lipstick, keys & cards',
-    materials: 'Metallic-leaf calfskin over a lightweight architectural frame with twin spherical kiss-lock.',
-    description: 'An heirloom-worthy evening jewel. The Vivienne Box Clutch pairs a structured champagne gold frame with twin spherical kiss-lock clasps.',
+    capacity: 'Fits large smartphone, lipstick, keys & cards',
+    materials: 'Metallic-leaf leather over a lightweight architectural frame with twin spherical kiss-lock.',
+    description: 'An heirloom-worthy festive jewel. The Vivienne Box Clutch pairs a structured champagne gold frame with twin spherical kiss-lock clasps.',
     images: {
       primary: 'assets/images/products/vivienne-clutch-primary.svg',
       secondary: 'assets/images/products/vivienne-clutch-hover.svg',
@@ -421,7 +454,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-BPK-011',
     name: 'The Noémie Convertible Backpack',
     subtitle: 'Drawstring Backpack & Shoulder Bag',
-    price: 345,
+    price: 10500,
+    compareAtPrice: null,
     category: 'Backpacks',
     primaryColor: 'Blush Pink',
     colors: [
@@ -437,8 +471,8 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '30 × 25 × 13 cm (11.8" × 9.8" × 5.1")',
     strapDrop: 'Converts in one pull from 30 cm shoulder to backpack',
     weight: '0.71 kg',
-    capacity: 'Fits 11" iPad Pro, planner, cosmetics bag & sunglasses',
-    materials: 'Supple pebbled calfskin with custom champagne gold eyelets and magnetic medallion flap.',
+    capacity: 'Fits 11" tablet, planner, cosmetics bag & sunglasses',
+    materials: 'Supple pebbled leather with custom champagne gold eyelets and magnetic medallion flap.',
     description: 'Designed for spontaneous days, The Noémie transforms from a relaxed shoulder bag into a hands-free backpack with a single fluid pull of its straps.',
     images: {
       primary: 'assets/images/products/noemie-backpack-primary.svg',
@@ -452,7 +486,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CRB-012',
     name: 'The Colette Bucket Crossbody',
     subtitle: 'Architectural Cinch Bucket Bag',
-    price: 255,
+    price: 6500,
+    compareAtPrice: null,
     category: 'Crossbody',
     primaryColor: 'Warm Ivory',
     colors: [
@@ -469,7 +504,7 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '18 cm top handle | 50 cm crossbody strap',
     weight: '0.52 kg',
     capacity: 'Spacious cylindrical interior with detachable zippered pouch',
-    materials: 'Smooth Italian calfskin bonded with contrast blush pink micro-suede interior.',
+    materials: 'Smooth calfskin bonded with contrast blush pink micro-suede interior.',
     description: 'Clean cylindrical lines meet a whisper of interior blush suede. The Colette cinches smoothly through a sculpted champagne gold collar.',
     images: {
       primary: 'assets/images/products/colette-crossbody-primary.svg',
@@ -483,7 +518,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-TOT-013',
     name: 'The Delphine Atelier Work Tote',
     subtitle: 'Structured Executive Commuter Tote',
-    price: 385,
+    price: 17500,
+    compareAtPrice: null,
     category: 'Totes',
     primaryColor: 'Deep Charcoal',
     colors: [
@@ -499,8 +535,8 @@ window.HANDLE_HUE_PRODUCTS = [
     dimensions: '40 × 30 × 16 cm (15.7" × 11.8" × 6.3")',
     strapDrop: '26 cm reinforced shoulder handles',
     weight: '0.89 kg',
-    capacity: 'Fits 16" laptop in padded sleeve, documents, folio & heels',
-    materials: 'Full-grain architectural calfskin with contrast blush interior lining and protective gold feet.',
+    capacity: 'Fits 16" laptop in padded sleeve, documents & daily essentials',
+    materials: 'Full-grain architectural leather with contrast blush interior lining and protective gold feet.',
     description: 'Commanding yet unmistakably feminine. The Delphine features a vertical architectural front panel and a blush-lined interior with a dedicated padded laptop suite.',
     images: {
       primary: 'assets/images/products/delphine-tote-primary.svg',
@@ -514,7 +550,8 @@ window.HANDLE_HUE_PRODUCTS = [
     sku: 'HH-CLT-014',
     name: 'The Giselle Pearl Frame Clutch',
     subtitle: 'Ruched Pouch with Pearl & Gold Clasp',
-    price: 185,
+    price: 4500,
+    compareAtPrice: 5200,
     category: 'Clutches',
     primaryColor: 'Warm Ivory',
     colors: [
@@ -531,7 +568,7 @@ window.HANDLE_HUE_PRODUCTS = [
     strapDrop: '45 cm delicate gold chain',
     weight: '0.33 kg',
     capacity: 'Fits smartphone, keys, powder compact & cards',
-    materials: 'Butter-soft gathered lambskin with cabochon mother-of-pearl and champagne gold frame.',
+    materials: 'Butter-soft gathered leather with cabochon mother-of-pearl and champagne gold frame.',
     description: 'Romantic drapery captured in leather. The Giselle is crowned with twin mother-of-pearl cabochons set in brushed champagne gold.',
     images: {
       primary: 'assets/images/products/giselle-clutch-primary.svg',

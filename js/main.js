@@ -2,14 +2,16 @@
  * ============================================================================
  * HANDLE & HUE — Main Application Controller (js/main.js)
  * ============================================================================
- * Handles:
+ * Adapted for the Pakistan Market (PKR Currency via window.formatPKR):
  * - Sticky transparent-to-ivory navbar & mobile slide-in drawer
- * - Live search overlay
+ * - Live search overlay with PKR pricing
  * - Product card rendering & quick-add / swatch / wishlist interactions
  * - Home page sections (Categories, New Arrivals, Shop by Color, Bestsellers)
- * - Shop page filtering (Category, Color, Price Range, Search) & sorting
+ * - Shop page filtering (Category, Color, Price Range in PKR, Search) & sorting
  * - Product Detail page (Gallery with hover zoom, Swatches, Accordions, Related)
- * - Cart & Checkout page (Order summary, Promo code, Checkout confirmation)
+ * - Cart & Checkout page (Rs. 10,000 free shipping threshold, flat Rs. 250 fee,
+ *   HUE10 / WELCOME10 promo codes, Pakistan province dropdown, COD / Bank Transfer
+ *   / JazzCash / Easypaisa payment options)
  * - Contact page form & FAQ accordions
  * ============================================================================
  */
@@ -21,6 +23,11 @@
   const colors = window.HANDLE_HUE_COLORS || [];
   const categories = window.HANDLE_HUE_CATEGORIES || [];
   const store = window.HandleHueStore;
+  const formatPKR =
+    window.formatPKR ||
+    function (n) {
+      return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString();
+    };
 
   /* ==========================================================================
      1. Sticky Navbar, Mobile Drawer & Global Overlays
@@ -28,7 +35,7 @@
   function initHeaderAndDrawers() {
     const header = document.getElementById('siteHeader');
     if (header) {
-      const onScroll = () => {
+      const onScroll = function () {
         if (window.scrollY > 36) {
           header.classList.add('is-scrolled');
         } else {
@@ -42,15 +49,14 @@
     // Mobile Menu Trigger
     const mobileBtn = document.getElementById('mobileMenuBtn');
     if (mobileBtn) {
-      mobileBtn.addEventListener('click', () => {
+      mobileBtn.addEventListener('click', function () {
         store.openSideDrawer('mobileNavDrawer');
       });
     }
 
     // Cart Drawer Trigger
-    document.querySelectorAll('[data-open-cart]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        // If already on cart.html, let user scroll to cart or still open drawer
+    document.querySelectorAll('[data-open-cart]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
         if (window.location.pathname.endsWith('cart.html')) return;
         e.preventDefault();
         store.openSideDrawer('cartDrawer');
@@ -58,8 +64,8 @@
     });
 
     // Wishlist Drawer Trigger
-    document.querySelectorAll('[data-open-wishlist]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+    document.querySelectorAll('[data-open-wishlist]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         store.openSideDrawer('wishlistDrawer');
       });
@@ -68,8 +74,8 @@
     // Search Overlay Trigger
     const searchOverlay = document.getElementById('searchOverlay');
     const searchInput = document.getElementById('globalSearchInput');
-    document.querySelectorAll('[data-open-search]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
+    document.querySelectorAll('[data-open-search]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         store.closeAllDrawers();
         if (searchOverlay) {
@@ -77,62 +83,86 @@
           searchOverlay.setAttribute('aria-hidden', 'false');
           const backdrop = document.getElementById('drawerBackdrop');
           if (backdrop) backdrop.classList.add('is-open');
-          setTimeout(() => searchInput && searchInput.focus(), 120);
+          setTimeout(function () {
+            if (searchInput) searchInput.focus();
+          }, 120);
         }
       });
     });
 
     // Close Buttons & Backdrop
-    document.querySelectorAll('[data-close-drawer]').forEach((btn) => {
-      btn.addEventListener('click', () => store.closeAllDrawers());
+    document.querySelectorAll('[data-close-drawer]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        store.closeAllDrawers();
+      });
     });
 
     const backdrop = document.getElementById('drawerBackdrop');
     if (backdrop) {
-      backdrop.addEventListener('click', () => store.closeAllDrawers());
+      backdrop.addEventListener('click', function () {
+        store.closeAllDrawers();
+      });
     }
 
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') store.closeAllDrawers();
     });
 
     // Live Search in Search Overlay
     const searchPreview = document.getElementById('globalSearchPreview');
     if (searchInput && searchPreview) {
-      const renderSearchPreview = (query) => {
+      const renderSearchPreview = function (query) {
         const q = (query || '').trim().toLowerCase();
         const matches = q
-          ? products.filter(
-              (p) =>
+          ? products.filter(function (p) {
+              return (
                 p.name.toLowerCase().includes(q) ||
                 p.category.toLowerCase().includes(q) ||
                 p.primaryColor.toLowerCase().includes(q) ||
                 p.subtitle.toLowerCase().includes(q)
-            )
+              );
+            })
           : products.slice(0, 4);
 
         if (matches.length === 0) {
-          searchPreview.innerHTML = `<p style="grid-column: 1/-1; color: var(--color-charcoal-soft); font-size:0.9rem;">No pieces found matching "${query}". Try searching for "Tote", "Blush", or "Clutch".</p>`;
+          searchPreview.innerHTML =
+            '<p style="grid-column: 1/-1; color: var(--color-charcoal-soft); font-size:0.9rem;">No pieces found matching "' +
+            query +
+            '". Try searching for "Tote", "Blush", or "Clutch".</p>';
           return;
         }
 
         searchPreview.innerHTML = matches
           .slice(0, 4)
-          .map(
-            (p) => `
-          <a href="product.html?id=${encodeURIComponent(p.id)}" style="display:flex; align-items:center; gap:0.8rem; padding:0.65rem; background:var(--color-ivory-pure); border:var(--border-thin); border-radius:var(--radius-sm);">
-            <img src="${p.images.primary}" alt="${p.name}" style="width:54px; height:62px; object-fit:cover; border-radius:4px;">
-            <div>
-              <div style="font-family:var(--font-heading); font-weight:600; font-size:1.05rem;">${p.name}</div>
-              <div style="font-size:0.76rem; color:var(--color-charcoal-muted);">${p.primaryColor} &bull; $${p.price}</div>
-            </div>
-          </a>
-        `
-          )
+          .map(function (p) {
+            return (
+              '<a href="product.html?id=' +
+              encodeURIComponent(p.id) +
+              '" style="display:flex; align-items:center; gap:0.8rem; padding:0.65rem; background:var(--color-ivory-pure); border:var(--border-thin); border-radius:var(--radius-sm);">' +
+              '<img src="' +
+              p.images.primary +
+              '" alt="' +
+              p.name +
+              '" style="width:54px; height:62px; object-fit:cover; border-radius:4px;">' +
+              '<div>' +
+              '<div style="font-family:var(--font-heading); font-weight:600; font-size:1.05rem;">' +
+              p.name +
+              '</div>' +
+              '<div style="font-size:0.76rem; color:var(--color-charcoal-muted);">' +
+              p.primaryColor +
+              ' &bull; ' +
+              formatPKR(p.price) +
+              '</div>' +
+              '</div>' +
+              '</a>'
+            );
+          })
           .join('');
       };
 
-      searchInput.addEventListener('input', (e) => renderSearchPreview(e.target.value));
+      searchInput.addEventListener('input', function (e) {
+        renderSearchPreview(e.target.value);
+      });
       renderSearchPreview('');
     }
   }
@@ -140,57 +170,120 @@
   /* ==========================================================================
      2. Reusable Product Card Renderer & Global Card Events
      ========================================================================== */
-  function renderProductCard(product, staggerIndex = 0) {
+  function renderProductCard(product, staggerIndex) {
+    const idx = Number(staggerIndex) || 0;
     const wished = store.isInWishlist(product.id);
-    const delayClass = staggerIndex > 0 ? `delay-${(staggerIndex % 4) + 1}` : '';
+    const delayClass = idx > 0 ? 'delay-' + ((idx % 4) + 1) : '';
     const badgeClass =
       product.badge === 'Limited Hue' ? 'product-card__badge--gold' : '';
+    const encodedId = encodeURIComponent(product.id);
 
-    return `
-      <article class="product-card reveal ${delayClass}" data-product-card="${product.id}" data-selected-color="${product.primaryColor}">
-        <div class="product-card__media">
-          ${
-            product.badge
-              ? `<span class="product-card__badge ${badgeClass}">${product.badge}</span>`
-              : ''
-          }
-          <button type="button" class="product-card__wishlist ${wished ? 'is-active' : ''}" data-wishlist-btn="${product.id}" aria-label="Save ${product.name} to wishlist" aria-pressed="${wished}">
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-          <a href="product.html?id=${encodeURIComponent(product.id)}" aria-label="View ${product.name}">
-            <img src="${product.images.primary}" alt="${product.name} in ${product.primaryColor}" class="product-card__img product-card__img--primary" loading="lazy">
-            <img src="${product.images.secondary}" alt="${product.name} alternate studio view" class="product-card__img product-card__img--secondary" loading="lazy">
-          </a>
-          <button type="button" class="product-card__quick-add" data-quick-add="${product.id}">
-            <span>+ Quick Add</span>
-          </button>
-        </div>
-        <div class="product-card__body">
-          <div class="product-card__category">${product.category} &bull; <span data-card-color-label>${product.primaryColor}</span></div>
-          <h3 class="product-card__title">
-            <a href="product.html?id=${encodeURIComponent(product.id)}">${product.name}</a>
-          </h3>
-          <div class="product-card__price-row">
-            <span class="product-card__price">$${product.price}</span>
-            <div class="product-card__swatches" role="group" aria-label="Available colors">
-              ${product.colors
-                .map(
-                  (c, idx) => `
-                <button type="button" class="swatch-dot ${idx === 0 ? 'is-selected' : ''}" style="background-color: ${c.hex};" title="${c.name}" aria-label="Select ${c.name}" data-card-swatch="${c.name}"></button>
-              `
-                )
-                .join('')}
-            </div>
-          </div>
-        </div>
-      </article>
-    `;
+    const comparePriceHtml = product.compareAtPrice
+      ? '<span style="font-size:0.8rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.4rem; font-weight:300;">' +
+        formatPKR(product.compareAtPrice) +
+        '</span>'
+      : '';
+
+    const swatchesHtml = product.colors
+      .map(function (c, sIdx) {
+        return (
+          '<button type="button" class="swatch-dot ' +
+          (sIdx === 0 ? 'is-selected' : '') +
+          '" style="background-color: ' +
+          c.hex +
+          ';" title="' +
+          c.name +
+          '" aria-label="Select ' +
+          c.name +
+          '" data-card-swatch="' +
+          c.name +
+          '"></button>'
+        );
+      })
+      .join('');
+
+    return (
+      '<article class="product-card reveal ' +
+      delayClass +
+      '" data-product-card="' +
+      product.id +
+      '" data-selected-color="' +
+      product.primaryColor +
+      '">' +
+      '<div class="product-card__media">' +
+      (product.badge
+        ? '<span class="product-card__badge ' +
+          badgeClass +
+          '">' +
+          product.badge +
+          '</span>'
+        : '') +
+      '<button type="button" class="product-card__wishlist ' +
+      (wished ? 'is-active' : '') +
+      '" data-wishlist-btn="' +
+      product.id +
+      '" aria-label="Save ' +
+      product.name +
+      ' to wishlist" aria-pressed="' +
+      wished +
+      '">' +
+      '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7">' +
+      '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+      '</svg>' +
+      '</button>' +
+      '<a href="product.html?id=' +
+      encodedId +
+      '" aria-label="View ' +
+      product.name +
+      '">' +
+      '<img src="' +
+      product.images.primary +
+      '" alt="' +
+      product.name +
+      ' in ' +
+      product.primaryColor +
+      '" class="product-card__img product-card__img--primary" loading="lazy">' +
+      '<img src="' +
+      product.images.secondary +
+      '" alt="' +
+      product.name +
+      ' alternate studio view" class="product-card__img product-card__img--secondary" loading="lazy">' +
+      '</a>' +
+      '<button type="button" class="product-card__quick-add" data-quick-add="' +
+      product.id +
+      '">' +
+      '<span>+ Quick Add</span>' +
+      '</button>' +
+      '</div>' +
+      '<div class="product-card__body">' +
+      '<div class="product-card__category">' +
+      product.category +
+      ' &bull; <span data-card-color-label>' +
+      product.primaryColor +
+      '</span></div>' +
+      '<h3 class="product-card__title">' +
+      '<a href="product.html?id=' +
+      encodedId +
+      '">' +
+      product.name +
+      '</a>' +
+      '</h3>' +
+      '<div class="product-card__price-row">' +
+      '<span class="product-card__price">' +
+      formatPKR(product.price) +
+      comparePriceHtml +
+      '</span>' +
+      '<div class="product-card__swatches" role="group" aria-label="Available colors">' +
+      swatchesHtml +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</article>'
+    );
   }
 
   // Global delegation for Product Card interactions (Quick Add, Wishlist Heart, Swatch Dot)
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', function (e) {
     const wishBtn = e.target.closest('[data-wishlist-btn]');
     if (wishBtn) {
       e.preventDefault();
@@ -216,7 +309,9 @@
       const card = swatchBtn.closest('[data-product-card]');
       if (card) {
         card.setAttribute('data-selected-color', colorName);
-        card.querySelectorAll('[data-card-swatch]').forEach((b) => b.classList.remove('is-selected'));
+        card.querySelectorAll('[data-card-swatch]').forEach(function (b) {
+          b.classList.remove('is-selected');
+        });
         swatchBtn.classList.add('is-selected');
         const label = card.querySelector('[data-card-color-label]');
         if (label) label.textContent = colorName;
@@ -232,26 +327,44 @@
     const catGrid = document.getElementById('homeCategoriesGrid');
     if (catGrid) {
       catGrid.innerHTML = categories
-        .map(
-          (cat, idx) => `
-        <a href="shop.html?category=${encodeURIComponent(cat.id)}" class="category-card reveal delay-${(idx % 5) + 1}">
-          <img src="${cat.image}" alt="${cat.name} Collection" class="category-card__img" loading="lazy">
-          <div class="category-card__overlay">
-            <h3 class="category-card__title">${cat.name}</h3>
-            <span class="category-card__count">${cat.subtitle}</span>
-          </div>
-        </a>
-      `
-        )
+        .map(function (cat, idx) {
+          return (
+            '<a href="shop.html?category=' +
+            encodeURIComponent(cat.id) +
+            '" class="category-card reveal delay-' +
+            ((idx % 5) + 1) +
+            '">' +
+            '<img src="' +
+            cat.image +
+            '" alt="' +
+            cat.name +
+            ' Collection" class="category-card__img" loading="lazy">' +
+            '<div class="category-card__overlay">' +
+            '<h3 class="category-card__title">' +
+            cat.name +
+            '</h3>' +
+            '<span class="category-card__count">' +
+            cat.subtitle +
+            '</span>' +
+            '</div>' +
+            '</a>'
+          );
+        })
         .join('');
     }
 
     // 2. New Arrivals Grid (4 items)
     const newArrivalsGrid = document.getElementById('newArrivalsGrid');
     if (newArrivalsGrid) {
-      const newItems = products.filter((p) => p.isNew).slice(0, 4);
+      const newItems = products
+        .filter(function (p) {
+          return p.isNew;
+        })
+        .slice(0, 4);
       newArrivalsGrid.innerHTML = newItems
-        .map((p, idx) => renderProductCard(p, idx))
+        .map(function (p, idx) {
+          return renderProductCard(p, idx);
+        })
         .join('');
     }
 
@@ -262,11 +375,13 @@
     const hueShopLink = document.getElementById('hueShopFilterLink');
 
     if (swatchesBar && huePreviewGrid) {
-      const renderHueSelection = (selectedColorKey) => {
+      const renderHueSelection = function (selectedColorKey) {
         const hueObj =
-          colors.find((c) => c.key === selectedColorKey) || colors[0];
+          colors.find(function (c) {
+            return c.key === selectedColorKey;
+          }) || colors[0];
 
-        swatchesBar.querySelectorAll('[data-hue-select]').forEach((el) => {
+        swatchesBar.querySelectorAll('[data-hue-select]').forEach(function (el) {
           el.classList.toggle(
             'is-active',
             el.getAttribute('data-hue-select') === hueObj.key
@@ -274,43 +389,62 @@
         });
 
         if (hueDescription) {
-          hueDescription.innerHTML = `<strong>${hueObj.name}</strong> &mdash; ${hueObj.poetic}`;
+          hueDescription.innerHTML =
+            '<strong>' + hueObj.name + '</strong> &mdash; ' + hueObj.poetic;
         }
         if (hueShopLink) {
-          hueShopLink.href = `shop.html?color=${encodeURIComponent(hueObj.key)}`;
-          hueShopLink.textContent = `Shop All ${hueObj.name} Pieces`;
+          hueShopLink.href = 'shop.html?color=' + encodeURIComponent(hueObj.key);
+          hueShopLink.textContent = 'Shop All ' + hueObj.name + ' Pieces';
         }
 
         const matchingProducts = products
-          .filter((p) => p.colors.some((c) => c.name === hueObj.key))
+          .filter(function (p) {
+            return p.colors.some(function (c) {
+              return c.name === hueObj.key;
+            });
+          })
           .slice(0, 4);
 
         huePreviewGrid.innerHTML = matchingProducts
-          .map((p, idx) => renderProductCard(p, idx))
+          .map(function (p, idx) {
+            return renderProductCard(p, idx);
+          })
           .join('');
 
         if (window.observeReveals) window.observeReveals();
       };
 
       swatchesBar.innerHTML = colors
-        .map(
-          (c, i) => `
-        <div class="hue-swatch-item ${i === 0 ? 'is-active' : ''}" data-hue-select="${c.key}" role="button" tabindex="0" aria-label="Explore ${c.name} bags">
-          <span class="hue-swatch-circle" style="background-color: ${c.hex}; border-color: ${c.borderHex};"></span>
-          <span class="hue-swatch-label">${c.name}</span>
-        </div>
-      `
-        )
+        .map(function (c, i) {
+          return (
+            '<div class="hue-swatch-item ' +
+            (i === 0 ? 'is-active' : '') +
+            '" data-hue-select="' +
+            c.key +
+            '" role="button" tabindex="0" aria-label="Explore ' +
+            c.name +
+            ' bags">' +
+            '<span class="hue-swatch-circle" style="background-color: ' +
+            c.hex +
+            '; border-color: ' +
+            c.borderHex +
+            ';"></span>' +
+            '<span class="hue-swatch-label">' +
+            c.name +
+            '</span>' +
+            '</div>'
+          );
+        })
         .join('');
 
-      swatchesBar.addEventListener('click', (e) => {
+      swatchesBar.addEventListener('click', function (e) {
         const item = e.target.closest('[data-hue-select]');
         if (item) {
           renderHueSelection(item.getAttribute('data-hue-select'));
         }
       });
 
-      swatchesBar.addEventListener('keydown', (e) => {
+      swatchesBar.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
           const item = e.target.closest('[data-hue-select]');
           if (item) {
@@ -326,16 +460,22 @@
     // 4. Bestsellers Grid (4 items)
     const bestsellersGrid = document.getElementById('bestsellersGrid');
     if (bestsellersGrid) {
-      const bestItems = products.filter((p) => p.isBestseller).slice(0, 4);
+      const bestItems = products
+        .filter(function (p) {
+          return p.isBestseller;
+        })
+        .slice(0, 4);
       bestsellersGrid.innerHTML = bestItems
-        .map((p, idx) => renderProductCard(p, idx))
+        .map(function (p, idx) {
+          return renderProductCard(p, idx);
+        })
         .join('');
     }
 
     // 5. Newsletter Form
     const newsletterForm = document.getElementById('newsletterForm');
     if (newsletterForm) {
-      newsletterForm.addEventListener('submit', (e) => {
+      newsletterForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const emailInput = newsletterForm.querySelector('input[type="email"]');
         if (emailInput && emailInput.value.trim()) {
@@ -351,17 +491,18 @@
   }
 
   /* ==========================================================================
-     4. SHOP PAGE CONTROLLER (Filters, Swatches, Price Slider, Sorting)
+     4. SHOP PAGE CONTROLLER (Filters, Swatches, Price Slider in PKR, Sorting)
      ========================================================================== */
   function initShopPage() {
     const shopGrid = document.getElementById('shopProductsGrid');
     if (!shopGrid) return;
 
+    const MAX_CATALOG_PRICE = 18000;
     const params = new URLSearchParams(window.location.search);
     const state = {
       category: params.get('category') || 'All',
       color: params.get('color') || 'All',
-      maxPrice: parseInt(params.get('maxPrice'), 10) || 400,
+      maxPrice: parseInt(params.get('maxPrice'), 10) || MAX_CATALOG_PRICE,
       search: params.get('search') || '',
       sort: params.get('sort') || 'featured'
     };
@@ -378,49 +519,74 @@
 
     function renderFilterControls() {
       if (catContainer) {
-        const allCats = ['All', ...categories.map((c) => c.id)];
+        const allCats = ['All'].concat(
+          categories.map(function (c) {
+            return c.id;
+          })
+        );
         catContainer.innerHTML = allCats
-          .map((catName) => {
+          .map(function (catName) {
             const count =
               catName === 'All'
                 ? products.length
-                : products.filter((p) => p.category === catName).length;
-            return `
-              <li>
-                <button type="button" class="filter-btn ${state.category === catName ? 'is-active' : ''}" data-filter-cat="${catName}">
-                  <span>${catName === 'All' ? 'All Silhouettes' : catName}</span>
-                  <span style="font-size:0.75rem; opacity:0.7;">(${count})</span>
-                </button>
-              </li>
-            `;
+                : products.filter(function (p) {
+                    return p.category === catName;
+                  }).length;
+            return (
+              '<li>' +
+              '<button type="button" class="filter-btn ' +
+              (state.category === catName ? 'is-active' : '') +
+              '" data-filter-cat="' +
+              catName +
+              '">' +
+              '<span>' +
+              (catName === 'All' ? 'All Silhouettes' : catName) +
+              '</span>' +
+              '<span style="font-size:0.75rem; opacity:0.7;">(' +
+              count +
+              ')</span>' +
+              '</button>' +
+              '</li>'
+            );
           })
           .join('');
       }
 
       if (colorContainer) {
-        colorContainer.innerHTML = `
-          <button type="button" class="filter-swatch-btn ${state.color === 'All' ? 'is-active' : ''}" data-filter-color="All">
-            <span class="filter-swatch-circle" style="background: conic-gradient(#F4D9D0, #FAF6F0, #C9A66B, #2B2B2B, #C5CEBE, #F4D9D0);"></span>
-            <span>All</span>
-          </button>
-          ${colors
-            .map(
-              (c) => `
-            <button type="button" class="filter-swatch-btn ${state.color === c.key ? 'is-active' : ''}" data-filter-color="${c.key}" title="${c.name}">
-              <span class="filter-swatch-circle" style="background-color: ${c.hex};"></span>
-              <span>${c.name.split(' ')[0]}</span>
-            </button>
-          `
-            )
-            .join('')}
-        `;
+        colorContainer.innerHTML =
+          '<button type="button" class="filter-swatch-btn ' +
+          (state.color === 'All' ? 'is-active' : '') +
+          '" data-filter-color="All">' +
+          '<span class="filter-swatch-circle" style="background: conic-gradient(#F4D9D0, #FAF6F0, #C9A66B, #2B2B2B, #C5CEBE, #F4D9D0);"></span>' +
+          '<span>All</span>' +
+          '</button>' +
+          colors
+            .map(function (c) {
+              return (
+                '<button type="button" class="filter-swatch-btn ' +
+                (state.color === c.key ? 'is-active' : '') +
+                '" data-filter-color="' +
+                c.key +
+                '" title="' +
+                c.name +
+                '">' +
+                '<span class="filter-swatch-circle" style="background-color: ' +
+                c.hex +
+                ';"></span>' +
+                '<span>' +
+                c.name.split(' ')[0] +
+                '</span>' +
+                '</button>'
+              );
+            })
+            .join('');
       }
 
       if (priceSlider) {
         priceSlider.value = state.maxPrice;
       }
       if (priceLabel) {
-        priceLabel.textContent = `$${state.maxPrice}`;
+        priceLabel.textContent = formatPKR(state.maxPrice);
       }
       if (searchInput) {
         searchInput.value = state.search;
@@ -431,13 +597,15 @@
     }
 
     function applyFiltersAndRender() {
-      let filtered = products.filter((prod) => {
+      const filtered = products.filter(function (prod) {
         if (state.category !== 'All' && prod.category !== state.category) {
           return false;
         }
         if (
           state.color !== 'All' &&
-          !prod.colors.some((c) => c.name.toLowerCase() === state.color.toLowerCase())
+          !prod.colors.some(function (c) {
+            return c.name.toLowerCase() === state.color.toLowerCase();
+          })
         ) {
           return false;
         }
@@ -458,52 +626,78 @@
 
       // Sorting
       if (state.sort === 'price-asc') {
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort(function (a, b) {
+          return a.price - b.price;
+        });
       } else if (state.sort === 'price-desc') {
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort(function (a, b) {
+          return b.price - a.price;
+        });
       } else if (state.sort === 'newest') {
-        filtered.sort((a, b) => Number(b.isNew) - Number(a.isNew));
+        filtered.sort(function (a, b) {
+          return Number(b.isNew) - Number(a.isNew);
+        });
       } else if (state.sort === 'name-asc') {
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        filtered.sort(function (a, b) {
+          return a.name.localeCompare(b.name);
+        });
       }
 
       if (countLabel) {
-        countLabel.textContent = `Showing ${filtered.length} of ${products.length} handcrafted pieces`;
+        countLabel.textContent =
+          'Showing ' + filtered.length + ' of ' + products.length + ' handcrafted pieces';
       }
 
       // Render active filter chips
       if (activeFiltersBar) {
         const chips = [];
         if (state.category !== 'All') {
-          chips.push(`<button type="button" class="filter-chip" data-clear-filter="category">Category: ${state.category} &times;</button>`);
+          chips.push(
+            '<button type="button" class="filter-chip" data-clear-filter="category">Category: ' +
+              state.category +
+              ' &times;</button>'
+          );
         }
         if (state.color !== 'All') {
-          chips.push(`<button type="button" class="filter-chip" data-clear-filter="color">Hue: ${state.color} &times;</button>`);
+          chips.push(
+            '<button type="button" class="filter-chip" data-clear-filter="color">Hue: ' +
+              state.color +
+              ' &times;</button>'
+          );
         }
-        if (state.maxPrice < 400) {
-          chips.push(`<button type="button" class="filter-chip" data-clear-filter="price">Under $${state.maxPrice} &times;</button>`);
+        if (state.maxPrice < MAX_CATALOG_PRICE) {
+          chips.push(
+            '<button type="button" class="filter-chip" data-clear-filter="price">Up to ' +
+              formatPKR(state.maxPrice) +
+              ' &times;</button>'
+          );
         }
         if (state.search.trim()) {
-          chips.push(`<button type="button" class="filter-chip" data-clear-filter="search">Search: "${state.search}" &times;</button>`);
+          chips.push(
+            '<button type="button" class="filter-chip" data-clear-filter="search">Search: "' +
+              state.search +
+              '" &times;</button>'
+          );
         }
         activeFiltersBar.innerHTML = chips.join('');
       }
 
       if (filtered.length === 0) {
-        shopGrid.innerHTML = `
-          <div style="grid-column: 1 / -1; text-align:center; padding: 4.5rem 1.5rem; background: var(--color-ivory-pure); border: var(--border-thin); border-radius: var(--radius-md);">
-            <h3 style="font-size:1.75rem; margin-bottom:0.65rem;">No pieces match your current selection</h3>
-            <p style="color:var(--color-charcoal-soft); margin-bottom:1.5rem;">Try broadening your price range or exploring another signature hue.</p>
-            <button type="button" class="btn btn-primary" id="emptyResetFiltersBtn">Reset All Filters</button>
-          </div>
-        `;
+        shopGrid.innerHTML =
+          '<div style="grid-column: 1 / -1; text-align:center; padding: 4.5rem 1.5rem; background: var(--color-ivory-pure); border: var(--border-thin); border-radius: var(--radius-md);">' +
+          '<h3 style="font-size:1.75rem; margin-bottom:0.65rem;">No pieces match your current selection</h3>' +
+          '<p style="color:var(--color-charcoal-soft); margin-bottom:1.5rem;">Try broadening your price range or exploring another signature hue.</p>' +
+          '<button type="button" class="btn btn-primary" id="emptyResetFiltersBtn">Reset All Filters</button>' +
+          '</div>';
         const resetBtn = document.getElementById('emptyResetFiltersBtn');
         if (resetBtn) resetBtn.addEventListener('click', resetAllFilters);
         return;
       }
 
       shopGrid.innerHTML = filtered
-        .map((p, idx) => renderProductCard(p, idx))
+        .map(function (p, idx) {
+          return renderProductCard(p, idx);
+        })
         .join('');
 
       if (window.observeReveals) window.observeReveals();
@@ -512,16 +706,15 @@
     function resetAllFilters() {
       state.category = 'All';
       state.color = 'All';
-      state.maxPrice = 400;
+      state.maxPrice = MAX_CATALOG_PRICE;
       state.search = '';
       state.sort = 'featured';
       renderFilterControls();
       applyFiltersAndRender();
     }
 
-    // Event Listeners
     if (catContainer) {
-      catContainer.addEventListener('click', (e) => {
+      catContainer.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-filter-cat]');
         if (btn) {
           state.category = btn.getAttribute('data-filter-cat');
@@ -532,7 +725,7 @@
     }
 
     if (colorContainer) {
-      colorContainer.addEventListener('click', (e) => {
+      colorContainer.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-filter-color]');
         if (btn) {
           state.color = btn.getAttribute('data-filter-color');
@@ -543,35 +736,35 @@
     }
 
     if (priceSlider) {
-      priceSlider.addEventListener('input', (e) => {
+      priceSlider.addEventListener('input', function (e) {
         state.maxPrice = parseInt(e.target.value, 10);
-        if (priceLabel) priceLabel.textContent = `$${state.maxPrice}`;
+        if (priceLabel) priceLabel.textContent = formatPKR(state.maxPrice);
         applyFiltersAndRender();
       });
     }
 
     if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
+      searchInput.addEventListener('input', function (e) {
         state.search = e.target.value;
         applyFiltersAndRender();
       });
     }
 
     if (sortSelect) {
-      sortSelect.addEventListener('change', (e) => {
+      sortSelect.addEventListener('change', function (e) {
         state.sort = e.target.value;
         applyFiltersAndRender();
       });
     }
 
     if (activeFiltersBar) {
-      activeFiltersBar.addEventListener('click', (e) => {
+      activeFiltersBar.addEventListener('click', function (e) {
         const chip = e.target.closest('[data-clear-filter]');
         if (!chip) return;
         const type = chip.getAttribute('data-clear-filter');
         if (type === 'category') state.category = 'All';
         if (type === 'color') state.color = 'All';
-        if (type === 'price') state.maxPrice = 400;
+        if (type === 'price') state.maxPrice = MAX_CATALOG_PRICE;
         if (type === 'search') state.search = '';
         renderFilterControls();
         applyFiltersAndRender();
@@ -596,9 +789,11 @@
     const params = new URLSearchParams(window.location.search);
     const productId = params.get('id') || 'aurelia-tote';
     const product =
-      products.find((p) => p.id === productId) || products[0];
+      products.find(function (p) {
+        return p.id === productId;
+      }) || products[0];
 
-    document.title = `${product.name} | Handle & Hue — Carry your color`;
+    document.title = product.name + ' | Handle & Hue — Carry your color';
 
     let selectedColor = product.primaryColor;
     let quantity = 1;
@@ -608,7 +803,7 @@
     const bcName = document.getElementById('pdpBreadcrumbName');
     if (bcCategory) {
       bcCategory.textContent = product.category;
-      bcCategory.href = `shop.html?category=${encodeURIComponent(product.category)}`;
+      bcCategory.href = 'shop.html?category=' + encodeURIComponent(product.category);
     }
     if (bcName) bcName.textContent = product.name;
 
@@ -620,114 +815,181 @@
     ];
 
     const wished = store.isInWishlist(product.id);
+    const compareHtml = product.compareAtPrice
+      ? '<span style="font-size:1.05rem; color:var(--color-charcoal-muted); text-decoration:line-through; margin-left:0.6rem; font-weight:300;">' +
+        formatPKR(product.compareAtPrice) +
+        '</span>'
+      : '';
 
-    pdpRoot.innerHTML = `
-      <div class="pdp-gallery">
-        <div class="pdp-thumbs" id="pdpThumbs">
-          ${galleryViews
-            .map(
-              (v, idx) => `
-            <button type="button" class="pdp-thumb-btn ${idx === 0 ? 'is-active' : ''}" data-thumb-src="${v.src}" aria-label="${v.label}">
-              <img src="${v.src}" alt="${v.label}">
-            </button>
-          `
-            )
-            .join('')}
-        </div>
-        <div class="pdp-main-stage" id="pdpZoomStage" title="Move cursor to inspect leather grain and hardware">
-          <img src="${product.images.primary}" alt="${product.name}" id="pdpMainImage">
-          <span class="pdp-zoom-hint">Hover to Magnify</span>
-        </div>
-      </div>
+    const thumbsHtml = galleryViews
+      .map(function (v, idx) {
+        return (
+          '<button type="button" class="pdp-thumb-btn ' +
+          (idx === 0 ? 'is-active' : '') +
+          '" data-thumb-src="' +
+          v.src +
+          '" aria-label="' +
+          v.label +
+          '">' +
+          '<img src="' +
+          v.src +
+          '" alt="' +
+          v.label +
+          '">' +
+          '</button>'
+        );
+      })
+      .join('');
 
-      <div class="pdp-info">
-        <span class="eyebrow">${product.category} &bull; SKU: ${product.sku}</span>
-        <h1 class="pdp-info__title">${product.name}</h1>
-        <p style="font-style:italic; font-family:var(--font-heading); font-size:1.2rem; color:var(--color-charcoal-soft); margin-bottom:1rem;">${product.subtitle}</p>
+    const swatchesHtml = product.colors
+      .map(function (c, i) {
+        return (
+          '<button type="button" class="pdp-swatch-btn ' +
+          (i === 0 ? 'is-active' : '') +
+          '" style="background-color:' +
+          c.hex +
+          ';" data-pdp-color="' +
+          c.name +
+          '" title="' +
+          c.name +
+          '" aria-label="Select ' +
+          c.name +
+          '"></button>'
+        );
+      })
+      .join('');
 
-        <div class="pdp-info__price-row">
-          <span class="pdp-info__price">$${product.price}</span>
-          <span class="pdp-info__rating">&#9733;&#9733;&#9733;&#9733;&#9733; ${product.rating} (${product.reviewsCount} Atelier Reviews)</span>
-        </div>
-
-        <p class="pdp-info__desc">${product.description}</p>
-
-        <div class="pdp-option-block">
-          <label class="pdp-option-label">Selected Hue: <span id="pdpSelectedColorName">${selectedColor}</span></label>
-          <div class="pdp-swatches" id="pdpSwatches">
-            ${product.colors
-              .map(
-                (c, i) => `
-              <button type="button" class="pdp-swatch-btn ${i === 0 ? 'is-active' : ''}" style="background-color:${c.hex};" data-pdp-color="${c.name}" title="${c.name}" aria-label="Select ${c.name}"></button>
-            `
-              )
-              .join('')}
-          </div>
-        </div>
-
-        <div class="pdp-dimensions-card">
-          <div class="pdp-dim-item">
-            <span>Dimensions</span>
-            <strong>${product.dimensions.split('(')[0].trim()}</strong>
-          </div>
-          <div class="pdp-dim-item">
-            <span>Strap Drop</span>
-            <strong>${product.strapDrop.split('|')[0].trim()}</strong>
-          </div>
-          <div class="pdp-dim-item">
-            <span>Weight</span>
-            <strong>${product.weight}</strong>
-          </div>
-        </div>
-
-        <div class="pdp-actions-row">
-          <div class="qty-selector" aria-label="Quantity">
-            <button type="button" id="pdpQtyMinus" aria-label="Decrease quantity">&minus;</button>
-            <input type="text" id="pdpQtyInput" value="1" readonly aria-label="Quantity">
-            <button type="button" id="pdpQtyPlus" aria-label="Increase quantity">+</button>
-          </div>
-          <button type="button" class="btn btn-primary" id="pdpAddToCartBtn" style="flex:1;">
-            Add to Shopping Bag &mdash; $${product.price}
-          </button>
-          <button type="button" class="btn btn-outline ${wished ? 'is-active' : ''}" id="pdpWishlistBtn" data-wishlist-btn="${product.id}" aria-label="Add to Wishlist" style="padding:0.95rem 1.25rem;">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="${wished ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.7">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-        </div>
-
-        <div class="pdp-accordions">
-          <div class="accordion-item is-open">
-            <button type="button" class="accordion-trigger">
-              <span>Materials &amp; Italian Craftsmanship</span>
-              <span>&plus;</span>
-            </button>
-            <div class="accordion-content">
-              <p>${product.materials}</p>
-              <p style="margin-top:0.5rem;"><strong>Interior Capacity:</strong> ${product.capacity}.</p>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <button type="button" class="accordion-trigger">
-              <span>Size, Strap &amp; Fit Specifications</span>
-              <span>&plus;</span>
-            </button>
-            <div class="accordion-content">
-              <p>Full Measurements: ${product.dimensions}<br>Strap Configuration: ${product.strapDrop}<br>Unladen Weight: ${product.weight}</p>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <button type="button" class="accordion-trigger">
-              <span>Complimentary Delivery, Packaging &amp; Care</span>
-              <span>&plus;</span>
-            </button>
-            <div class="accordion-content">
-              <p>Every Handle &amp; Hue piece arrives in our signature blush linen dust bag and embossed ivory presentation box. Complimentary express shipping on orders over $250 and 30-day boutique returns.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    pdpRoot.innerHTML =
+      '<div class="pdp-gallery">' +
+      '<div class="pdp-thumbs" id="pdpThumbs">' +
+      thumbsHtml +
+      '</div>' +
+      '<div class="pdp-main-stage" id="pdpZoomStage" title="Move cursor to inspect leather grain and hardware">' +
+      '<img src="' +
+      product.images.primary +
+      '" alt="' +
+      product.name +
+      '" id="pdpMainImage">' +
+      '<span class="pdp-zoom-hint">Hover to Magnify</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="pdp-info">' +
+      '<span class="eyebrow">' +
+      product.category +
+      ' &bull; SKU: ' +
+      product.sku +
+      '</span>' +
+      '<h1 class="pdp-info__title">' +
+      product.name +
+      '</h1>' +
+      '<p style="font-style:italic; font-family:var(--font-heading); font-size:1.2rem; color:var(--color-charcoal-soft); margin-bottom:1rem;">' +
+      product.subtitle +
+      '</p>' +
+      '<div class="pdp-info__price-row">' +
+      '<span class="pdp-info__price">' +
+      formatPKR(product.price) +
+      compareHtml +
+      '</span>' +
+      '<span class="pdp-info__rating">&#9733;&#9733;&#9733;&#9733;&#9733; ' +
+      product.rating +
+      ' (' +
+      product.reviewsCount +
+      ' Atelier Reviews)</span>' +
+      '</div>' +
+      '<p class="pdp-info__desc">' +
+      product.description +
+      '</p>' +
+      '<div class="pdp-option-block">' +
+      '<label class="pdp-option-label">Selected Hue: <span id="pdpSelectedColorName">' +
+      selectedColor +
+      '</span></label>' +
+      '<div class="pdp-swatches" id="pdpSwatches">' +
+      swatchesHtml +
+      '</div>' +
+      '</div>' +
+      '<div class="pdp-dimensions-card">' +
+      '<div class="pdp-dim-item">' +
+      '<span>Dimensions</span>' +
+      '<strong>' +
+      product.dimensions.split('(')[0].trim() +
+      '</strong>' +
+      '</div>' +
+      '<div class="pdp-dim-item">' +
+      '<span>Strap Drop</span>' +
+      '<strong>' +
+      product.strapDrop.split('|')[0].trim() +
+      '</strong>' +
+      '</div>' +
+      '<div class="pdp-dim-item">' +
+      '<span>Weight</span>' +
+      '<strong>' +
+      product.weight +
+      '</strong>' +
+      '</div>' +
+      '</div>' +
+      '<div class="pdp-actions-row">' +
+      '<div class="qty-selector" aria-label="Quantity">' +
+      '<button type="button" id="pdpQtyMinus" aria-label="Decrease quantity">&minus;</button>' +
+      '<input type="text" id="pdpQtyInput" value="1" readonly aria-label="Quantity">' +
+      '<button type="button" id="pdpQtyPlus" aria-label="Increase quantity">+</button>' +
+      '</div>' +
+      '<button type="button" class="btn btn-primary" id="pdpAddToCartBtn" style="flex:1;">' +
+      'Add to Shopping Bag &mdash; ' +
+      formatPKR(product.price) +
+      '</button>' +
+      '<button type="button" class="btn btn-outline ' +
+      (wished ? 'is-active' : '') +
+      '" id="pdpWishlistBtn" data-wishlist-btn="' +
+      product.id +
+      '" aria-label="Add to Wishlist" style="padding:0.95rem 1.25rem;">' +
+      '<svg viewBox="0 0 24 24" width="18" height="18" fill="' +
+      (wished ? 'currentColor' : 'none') +
+      '" stroke="currentColor" stroke-width="1.7">' +
+      '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
+      '</svg>' +
+      '</button>' +
+      '</div>' +
+      '<div class="pdp-accordions">' +
+      '<div class="accordion-item is-open">' +
+      '<button type="button" class="accordion-trigger">' +
+      '<span>Materials &amp; Craftsmanship</span>' +
+      '<span>&plus;</span>' +
+      '</button>' +
+      '<div class="accordion-content">' +
+      '<p>' +
+      product.materials +
+      '</p>' +
+      '<p style="margin-top:0.5rem;"><strong>Interior Capacity:</strong> ' +
+      product.capacity +
+      '.</p>' +
+      '</div>' +
+      '</div>' +
+      '<div class="accordion-item">' +
+      '<button type="button" class="accordion-trigger">' +
+      '<span>Size, Strap &amp; Fit Specifications</span>' +
+      '<span>&plus;</span>' +
+      '</button>' +
+      '<div class="accordion-content">' +
+      '<p>Full Measurements: ' +
+      product.dimensions +
+      '<br>Strap Configuration: ' +
+      product.strapDrop +
+      '<br>Unladen Weight: ' +
+      product.weight +
+      '</p>' +
+      '</div>' +
+      '</div>' +
+      '<div class="accordion-item">' +
+      '<button type="button" class="accordion-trigger">' +
+      '<span>Nationwide Delivery Across Pakistan &amp; Easy Exchange</span>' +
+      '<span>&plus;</span>' +
+      '</button>' +
+      '<div class="accordion-content">' +
+      '<p>Nationwide delivery across Pakistan in 3 to 5 working days. Enjoy free delivery on orders of Rs. 10,000 or above (flat Rs. 250 nationwide shipping fee below Rs. 10,000). Cash on Delivery, Bank Transfer, JazzCash, and Easypaisa are available, backed by our hassle-free 14-day easy exchange policy.</p>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
 
     // Bind Gallery Thumbnails & Interactive Hover Zoom
     const mainImg = document.getElementById('pdpMainImage');
@@ -735,26 +997,28 @@
     const thumbsContainer = document.getElementById('pdpThumbs');
 
     if (thumbsContainer && mainImg) {
-      thumbsContainer.addEventListener('click', (e) => {
+      thumbsContainer.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-thumb-src]');
         if (!btn) return;
         mainImg.src = btn.getAttribute('data-thumb-src');
         thumbsContainer
           .querySelectorAll('.pdp-thumb-btn')
-          .forEach((b) => b.classList.remove('is-active'));
+          .forEach(function (b) {
+            b.classList.remove('is-active');
+          });
         btn.classList.add('is-active');
       });
     }
 
     if (zoomStage && mainImg) {
-      zoomStage.addEventListener('mousemove', (e) => {
+      zoomStage.addEventListener('mousemove', function (e) {
         const rect = zoomStage.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
         const y = ((e.clientY - rect.top) / rect.height) * 100;
-        mainImg.style.transformOrigin = `${x}% ${y}%`;
+        mainImg.style.transformOrigin = x + '% ' + y + '%';
         mainImg.style.transform = 'scale(1.65)';
       });
-      zoomStage.addEventListener('mouseleave', () => {
+      zoomStage.addEventListener('mouseleave', function () {
         mainImg.style.transform = 'scale(1)';
         mainImg.style.transformOrigin = 'center center';
       });
@@ -764,14 +1028,16 @@
     const swatchesContainer = document.getElementById('pdpSwatches');
     const colorNameSpan = document.getElementById('pdpSelectedColorName');
     if (swatchesContainer) {
-      swatchesContainer.addEventListener('click', (e) => {
+      swatchesContainer.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-pdp-color]');
         if (!btn) return;
         selectedColor = btn.getAttribute('data-pdp-color');
         if (colorNameSpan) colorNameSpan.textContent = selectedColor;
         swatchesContainer
           .querySelectorAll('.pdp-swatch-btn')
-          .forEach((b) => b.classList.remove('is-active'));
+          .forEach(function (b) {
+            b.classList.remove('is-active');
+          });
         btn.classList.add('is-active');
       });
     }
@@ -783,31 +1049,35 @@
     const addBtn = document.getElementById('pdpAddToCartBtn');
 
     if (minusBtn && plusBtn && qtyInput) {
-      minusBtn.addEventListener('click', () => {
+      minusBtn.addEventListener('click', function () {
         if (quantity > 1) {
           quantity--;
           qtyInput.value = quantity;
-          if (addBtn)
-            addBtn.innerHTML = `Add to Shopping Bag &mdash; $${(product.price * quantity).toLocaleString()}`;
+          if (addBtn) {
+            addBtn.innerHTML =
+              'Add to Shopping Bag &mdash; ' + formatPKR(product.price * quantity);
+          }
         }
       });
-      plusBtn.addEventListener('click', () => {
+      plusBtn.addEventListener('click', function () {
         quantity++;
         qtyInput.value = quantity;
-        if (addBtn)
-          addBtn.innerHTML = `Add to Shopping Bag &mdash; $${(product.price * quantity).toLocaleString()}`;
+        if (addBtn) {
+          addBtn.innerHTML =
+            'Add to Shopping Bag &mdash; ' + formatPKR(product.price * quantity);
+        }
       });
     }
 
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
+      addBtn.addEventListener('click', function () {
         store.addToCart(product.id, selectedColor, quantity, true);
       });
     }
 
     // Bind Accordions
-    pdpRoot.querySelectorAll('.accordion-trigger').forEach((trigger) => {
-      trigger.addEventListener('click', () => {
+    pdpRoot.querySelectorAll('.accordion-trigger').forEach(function (trigger) {
+      trigger.addEventListener('click', function () {
         const item = trigger.closest('.accordion-item');
         if (item) item.classList.toggle('is-open');
       });
@@ -817,11 +1087,20 @@
     const relatedGrid = document.getElementById('relatedProductsGrid');
     if (relatedGrid) {
       const related = products
-        .filter((p) => p.id !== product.id)
-        .sort((a, b) => Number(b.category === product.category) - Number(a.category === product.category))
+        .filter(function (p) {
+          return p.id !== product.id;
+        })
+        .sort(function (a, b) {
+          return (
+            Number(b.category === product.category) -
+            Number(a.category === product.category)
+          );
+        })
         .slice(0, 4);
       relatedGrid.innerHTML = related
-        .map((p, idx) => renderProductCard(p, idx))
+        .map(function (p, idx) {
+          return renderProductCard(p, idx);
+        })
         .join('');
     }
 
@@ -829,15 +1108,21 @@
   }
 
   /* ==========================================================================
-     6. CART & CHECKOUT PAGE CONTROLLER
+     6. CART & CHECKOUT PAGE CONTROLLER (Pakistan Market & PKR Totals)
      ========================================================================== */
   function initCartPage() {
     const cartItemsContainer = document.getElementById('cartPageItems');
     if (!cartItemsContainer) return;
 
+    const shippingCfg = window.HANDLE_HUE_SHIPPING_CONFIG || {
+      freeShippingThreshold: 10000,
+      flatShippingFee: 250
+    };
+    const FREE_SHIPPING_THRESHOLD = shippingCfg.freeShippingThreshold; // Rs. 10,000
+    const FLAT_SHIPPING_FEE = shippingCfg.flatShippingFee;             // Rs. 250
+
     let discountRate = 0;
-    let shippingCost = 0;
-    const FREE_SHIPPING_THRESHOLD = 250;
+    let activePromoCode = '';
 
     const shippingMeterText = document.getElementById('shippingMeterText');
     const shippingMeterFill = document.getElementById('shippingMeterFill');
@@ -848,90 +1133,148 @@
     const summaryTotal = document.getElementById('summaryTotal');
     const promoForm = document.getElementById('promoCodeForm');
     const promoInput = document.getElementById('promoCodeInput');
-    const shippingSelect = document.getElementById('shippingMethodSelect');
     const checkoutForm = document.getElementById('checkoutForm');
+    const paymentSelect = document.getElementById('checkoutPayment');
+    const paymentNoteEl = document.getElementById('checkoutPaymentNote');
     const orderSuccessBox = document.getElementById('orderConfirmationBox');
 
     function renderCartPage() {
       const cart = store.getCart();
       const subtotal = store.getCartSubtotal();
 
-      // Update Free Shipping Meter
+      // Update Free Shipping Meter (Threshold: Rs. 10,000)
       const pct = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100));
-      if (shippingMeterFill) shippingMeterFill.style.width = `${pct}%`;
+      if (shippingMeterFill) shippingMeterFill.style.width = pct + '%';
       if (shippingMeterText) {
         if (subtotal === 0) {
-          shippingMeterText.innerHTML = `Enjoy <strong>Complimentary Express Courier</strong> on all orders over $${FREE_SHIPPING_THRESHOLD}.`;
+          shippingMeterText.innerHTML =
+            'Enjoy <strong>Free Nationwide Delivery across Pakistan</strong> on orders of <strong>' +
+            formatPKR(FREE_SHIPPING_THRESHOLD) +
+            '</strong> or above (flat ' +
+            formatPKR(FLAT_SHIPPING_FEE) +
+            ' nationwide shipping below ' +
+            formatPKR(FREE_SHIPPING_THRESHOLD) +
+            ').';
         } else if (subtotal >= FREE_SHIPPING_THRESHOLD) {
-          shippingMeterText.innerHTML = `&#10022; Your order qualifies for <strong>Complimentary Express Boutique Delivery</strong>.`;
+          shippingMeterText.innerHTML =
+            '&#10022; Your bag qualifies for <strong>Free Nationwide Delivery across Pakistan</strong> (3 to 5 working days)!';
         } else {
           const diff = FREE_SHIPPING_THRESHOLD - subtotal;
-          shippingMeterText.innerHTML = `Add <strong>$${diff}</strong> more to unlock Complimentary Express Delivery.`;
+          shippingMeterText.innerHTML =
+            'Add <strong>' +
+            formatPKR(diff) +
+            '</strong> more to unlock <strong>Free Nationwide Delivery</strong> (orders below ' +
+            formatPKR(FREE_SHIPPING_THRESHOLD) +
+            ' have a flat ' +
+            formatPKR(FLAT_SHIPPING_FEE) +
+            ' shipping fee).';
         }
       }
 
       if (cart.length === 0) {
-        cartItemsContainer.innerHTML = `
-          <div style="text-align:center; padding: 3.5rem 1rem;">
-            <h3 style="font-size: 1.85rem; margin-bottom: 0.65rem;">Your shopping bag is currently empty</h3>
-            <p style="color: var(--color-charcoal-soft); margin-bottom: 2rem;">Discover our sculptural silhouettes crafted in full-grain Italian calfskin.</p>
-            <a href="shop.html" class="btn btn-primary">Shop the Collection</a>
-          </div>
-        `;
+        cartItemsContainer.innerHTML =
+          '<div style="text-align:center; padding: 3.5rem 1rem;">' +
+          '<h3 style="font-size: 1.85rem; margin-bottom: 0.65rem;">Your shopping bag is currently empty</h3>' +
+          '<p style="color: var(--color-charcoal-soft); margin-bottom: 2rem;">Discover our sculptural silhouettes with nationwide delivery across Pakistan.</p>' +
+          '<a href="shop.html" class="btn btn-primary">Shop the Collection</a>' +
+          '</div>';
       } else {
         cartItemsContainer.innerHTML = cart
-          .map(
-            (item) => `
-          <div class="cart-row">
-            <a href="product.html?id=${encodeURIComponent(item.id)}">
-              <img src="${item.image}" alt="${item.name}" class="cart-row__img">
-            </a>
-            <div>
-              <span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--color-charcoal-muted);">${item.category}</span>
-              <h3 style="font-size:1.35rem; margin-bottom:0.25rem;">
-                <a href="product.html?id=${encodeURIComponent(item.id)}">${item.name}</a>
-              </h3>
-              <p style="font-size:0.84rem; color:var(--color-charcoal-soft); margin-bottom:0.5rem;">Selected Hue: <strong>${item.color}</strong> &bull; Unit Price: $${item.price}</p>
-              <button type="button" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--color-charcoal-muted); border-bottom:1px solid var(--color-gold);" data-cart-remove="${item.id}" data-cart-color="${item.color}">Remove Item</button>
-            </div>
-            <div class="qty-selector">
-              <button type="button" data-cart-qty="${item.id}" data-cart-color="${item.color}" data-delta="-1" aria-label="Decrease quantity">&minus;</button>
-              <input type="text" value="${item.qty}" readonly aria-label="Quantity">
-              <button type="button" data-cart-qty="${item.id}" data-cart-color="${item.color}" data-delta="1" aria-label="Increase quantity">+</button>
-            </div>
-            <div style="font-size:1.1rem; font-weight:500; min-width:75px; text-align:right;">
-              $${(item.price * item.qty).toLocaleString()}
-            </div>
-          </div>
-        `
-          )
+          .map(function (item) {
+            const encodedId = encodeURIComponent(item.id);
+            return (
+              '<div class="cart-row">' +
+              '<a href="product.html?id=' +
+              encodedId +
+              '">' +
+              '<img src="' +
+              item.image +
+              '" alt="' +
+              item.name +
+              '" class="cart-row__img">' +
+              '</a>' +
+              '<div>' +
+              '<span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.18em; color:var(--color-charcoal-muted);">' +
+              item.category +
+              '</span>' +
+              '<h3 style="font-size:1.35rem; margin-bottom:0.25rem;">' +
+              '<a href="product.html?id=' +
+              encodedId +
+              '">' +
+              item.name +
+              '</a>' +
+              '</h3>' +
+              '<p style="font-size:0.84rem; color:var(--color-charcoal-soft); margin-bottom:0.5rem;">Selected Hue: <strong>' +
+              item.color +
+              '</strong> &bull; Unit Price: ' +
+              formatPKR(item.price) +
+              '</p>' +
+              '<button type="button" style="font-size:0.72rem; text-transform:uppercase; letter-spacing:0.15em; color:var(--color-charcoal-muted); border-bottom:1px solid var(--color-gold);" data-cart-remove="' +
+              item.id +
+              '" data-cart-color="' +
+              item.color +
+              '">Remove Item</button>' +
+              '</div>' +
+              '<div class="qty-selector">' +
+              '<button type="button" data-cart-qty="' +
+              item.id +
+              '" data-cart-color="' +
+              item.color +
+              '" data-delta="-1" aria-label="Decrease quantity">&minus;</button>' +
+              '<input type="text" value="' +
+              item.qty +
+              '" readonly aria-label="Quantity">' +
+              '<button type="button" data-cart-qty="' +
+              item.id +
+              '" data-cart-color="' +
+              item.color +
+              '" data-delta="1" aria-label="Increase quantity">+</button>' +
+              '</div>' +
+              '<div style="font-size:1.1rem; font-weight:500; min-width:95px; text-align:right;">' +
+              formatPKR(item.price * item.qty) +
+              '</div>' +
+              '</div>'
+            );
+          })
           .join('');
       }
 
-      // Summary Totals
+      // Summary Totals in PKR
       const discountAmount = Math.round(subtotal * discountRate);
-      const effectiveShipping = subtotal === 0 ? 0 : shippingCost;
+      const effectiveShipping =
+        subtotal === 0
+          ? 0
+          : subtotal >= FREE_SHIPPING_THRESHOLD
+          ? 0
+          : FLAT_SHIPPING_FEE;
       const total = Math.max(0, subtotal - discountAmount + effectiveShipping);
 
-      if (summarySubtotal) summarySubtotal.textContent = `$${subtotal.toLocaleString()}`;
+      if (summarySubtotal) summarySubtotal.textContent = formatPKR(subtotal);
       if (summaryDiscountRow && summaryDiscount) {
         summaryDiscountRow.style.display = discountAmount > 0 ? 'flex' : 'none';
-        summaryDiscount.textContent = `-$${discountAmount.toLocaleString()}`;
+        summaryDiscount.textContent = '-' + formatPKR(discountAmount);
       }
       if (summaryShipping) {
-        summaryShipping.textContent =
-          effectiveShipping === 0 ? 'Complimentary' : `$${effectiveShipping}`;
+        if (subtotal === 0) {
+          summaryShipping.textContent = formatPKR(FLAT_SHIPPING_FEE);
+        } else if (effectiveShipping === 0) {
+          summaryShipping.textContent = 'Free (' + formatPKR(0) + ')';
+        } else {
+          summaryShipping.textContent = formatPKR(effectiveShipping);
+        }
       }
-      if (summaryTotal) summaryTotal.textContent = `$${total.toLocaleString()}`;
+      if (summaryTotal) summaryTotal.textContent = formatPKR(total);
     }
 
-    cartItemsContainer.addEventListener('click', (e) => {
+    cartItemsContainer.addEventListener('click', function (e) {
       const qtyBtn = e.target.closest('[data-cart-qty]');
       if (qtyBtn) {
         const id = qtyBtn.getAttribute('data-cart-qty');
         const color = qtyBtn.getAttribute('data-cart-color');
         const delta = parseInt(qtyBtn.getAttribute('data-delta'), 10);
-        const item = store.getCart().find((i) => i.id === id && i.color === color);
+        const item = store.getCart().find(function (i) {
+          return i.id === id && i.color === color;
+        });
         if (item) store.updateQuantity(id, color, item.qty + delta);
         return;
       }
@@ -948,54 +1291,118 @@
     window.addEventListener('handlehue:cart-updated', renderCartPage);
 
     if (promoForm && promoInput) {
-      promoForm.addEventListener('submit', (e) => {
+      promoForm.addEventListener('submit', function (e) {
         e.preventDefault();
         const code = promoInput.value.trim().toUpperCase();
         if (code === 'HUE10' || code === 'WELCOME10') {
           discountRate = 0.1;
-          store.showToast('Privilege code applied: 10% off your order.');
+          activePromoCode = code;
+          store.showToast(
+            'Privilege code ' + code + ' applied: 10% off your PKR bag subtotal.'
+          );
           renderCartPage();
         } else {
-          store.showToast('Invalid code. Try HUE10 for 10% off.');
+          store.showToast('Invalid code. Use HUE10 or WELCOME10 for 10% off.');
         }
       });
     }
 
-    if (shippingSelect) {
-      shippingSelect.addEventListener('change', (e) => {
-        shippingCost = parseInt(e.target.value, 10) || 0;
-        renderCartPage();
+    // Update payment method instruction note dynamically
+    if (paymentSelect && paymentNoteEl) {
+      const paymentNotes = {
+        cod: 'Pay in cash (PKR) at your doorstep when our courier delivers your parcel anywhere in Pakistan. Our concierge team will call or message you on WhatsApp to confirm your order before dispatch.',
+        bank: 'You have selected Bank Transfer. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our Allied Bank / Meezan Bank account details to confirm your order.',
+        jazzcash: 'You have selected JazzCash. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our official JazzCash merchant details to confirm your order.',
+        easypaisa: 'You have selected Easypaisa. Once you place your order, our concierge team will contact you via WhatsApp/Phone with our official Easypaisa account details to confirm your order.'
+      };
+      paymentSelect.addEventListener('change', function (e) {
+        paymentNoteEl.textContent =
+          paymentNotes[e.target.value] || paymentNotes.cod;
       });
     }
 
     if (checkoutForm) {
-      checkoutForm.addEventListener('submit', (e) => {
+      checkoutForm.addEventListener('submit', function (e) {
         e.preventDefault();
         if (store.getCartCount() === 0) {
-          store.showToast('Your shopping bag is empty. Please add a piece before checkout.');
+          store.showToast(
+            'Your shopping bag is empty. Please add a piece before checkout.'
+          );
           return;
         }
-        const orderRef = `HH-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const subtotal = store.getCartSubtotal();
+        const discountAmount = Math.round(subtotal * discountRate);
+        const effectiveShipping =
+          subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : FLAT_SHIPPING_FEE;
+        const finalTotal = Math.max(
+          0,
+          subtotal - discountAmount + effectiveShipping
+        );
+
+        const orderRef =
+          'HH-' +
+          new Date().getFullYear() +
+          '-' +
+          Math.floor(1000 + Math.random() * 9000);
+        const customerNameEl = document.getElementById('checkoutFullName');
+        const customerPhoneEl = document.getElementById('checkoutPhone');
+        const customerCityEl = document.getElementById('checkoutCity');
+        const customerProvinceEl = document.getElementById('checkoutProvince');
+        const paymentOptionText =
+          paymentSelect && paymentSelect.options[paymentSelect.selectedIndex]
+            ? paymentSelect.options[paymentSelect.selectedIndex].text
+            : 'Cash on Delivery (COD)';
+
         const customerName =
-          document.getElementById('checkoutFirstName')?.value || 'Valued Guest';
-        const totalText = summaryTotal ? summaryTotal.textContent : '';
+          customerNameEl && customerNameEl.value
+            ? customerNameEl.value
+            : 'Valued Client';
+        const customerPhone =
+          customerPhoneEl && customerPhoneEl.value ? customerPhoneEl.value : '';
+        const customerLocation =
+          (customerCityEl ? customerCityEl.value : '') +
+          (customerProvinceEl ? ', ' + customerProvinceEl.value : '');
 
         store.clearCart();
+        discountRate = 0;
+        activePromoCode = '';
         checkoutForm.reset();
+        renderCartPage();
 
         if (orderSuccessBox) {
           orderSuccessBox.style.display = 'block';
-          orderSuccessBox.innerHTML = `
-            <span class="eyebrow">Atelier Order Confirmed</span>
-            <h3 style="font-size:2rem; margin-bottom:0.5rem;">Thank you, ${customerName}</h3>
-            <p style="color:var(--color-charcoal-soft); margin-bottom:1rem;">
-              Your order <strong>#${orderRef}</strong> (${totalText}) has been received by our craftsmanship studio and is being prepared in signature blush &amp; champagne gold packaging.
-            </p>
-            <a href="shop.html" class="btn btn-gold">Continue Exploring</a>
-          `;
+          orderSuccessBox.innerHTML =
+            '<span class="eyebrow">Atelier Order Confirmed</span>' +
+            '<h3 style="font-size:2rem; margin-bottom:0.5rem;">Thank you, ' +
+            customerName +
+            '</h3>' +
+            '<p style="color:var(--color-charcoal-soft); margin-bottom:0.75rem;">' +
+            'Your order <strong>#' +
+            orderRef +
+            '</strong> for <strong>' +
+            formatPKR(finalTotal) +
+            '</strong> (' +
+            paymentOptionText +
+            ') destined for <strong>' +
+            customerLocation +
+            '</strong> has been received.' +
+            '</p>' +
+            '<p style="color:var(--color-charcoal-soft); font-size:0.9rem; margin-bottom:1.5rem;">' +
+            'Our concierge team will contact you shortly at <strong>' +
+            customerPhone +
+            '</strong> to confirm your order. Nationwide delivery across Pakistan takes 3 to 5 working days.' +
+            '</p>' +
+            '<a href="shop.html" class="btn btn-gold">Continue Exploring</a>';
           orderSuccessBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-        store.showToast(`Order ${orderRef} confirmed! Thank you for shopping with Handle & Hue.`);
+        store.showToast(
+          'Order ' +
+            orderRef +
+            ' (' +
+            formatPKR(finalTotal) +
+            ') confirmed! We will contact you shortly.'
+        );
       });
     }
 
@@ -1010,30 +1417,40 @@
     const feedbackEl = document.getElementById('contactFormFeedback');
 
     if (contactForm) {
-      contactForm.addEventListener('submit', (e) => {
+      contactForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const name = contactForm.querySelector('[name="name"]')?.value || 'Guest';
-        store.showToast(`Thank you, ${name}. Our Atelier Concierge will reply within 24 hours.`);
+        const nameInput = contactForm.querySelector('[name="name"]');
+        const name = nameInput && nameInput.value ? nameInput.value : 'Guest';
+        store.showToast(
+          'Thank you, ' +
+            name +
+            '. Our Pakistan Atelier Concierge will reply within 24 hours.'
+        );
         if (feedbackEl) {
           feedbackEl.style.display = 'block';
-          feedbackEl.textContent = `Thank you, ${name}. Your message has been received by the Handle & Hue Concierge.`;
+          feedbackEl.textContent =
+            'Thank you, ' +
+            name +
+            '. Your message has been received by the Handle & Hue Concierge.';
         }
         contactForm.reset();
       });
     }
 
-    document.querySelectorAll('.faq-accordion .accordion-trigger').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const item = btn.closest('.accordion-item');
-        if (item) item.classList.toggle('is-open');
+    document
+      .querySelectorAll('.faq-accordion .accordion-trigger')
+      .forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const item = btn.closest('.accordion-item');
+          if (item) item.classList.toggle('is-open');
+        });
       });
-    });
   }
 
   /* ==========================================================================
      Initialize Everything on DOMContentLoaded
      ========================================================================== */
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', function () {
     initHeaderAndDrawers();
     initHomePage();
     initShopPage();
